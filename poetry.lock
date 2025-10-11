@@ -195,6 +195,24 @@ diskcache = ["diskcache (>=5.2.1)", "multiprocess (>=0.70.12)", "psutil (>=5.8.0
 testing = ["beautifulsoup4 (>=4.8.2)", "cryptography", "dash-testing-stub (>=0.0.2)", "lxml (>=4.6.2)", "multiprocess (>=0.70.12)", "percy (>=2.0.2)", "psutil (>=5.8.0)", "pytest (>=6.0.2)", "requests[security] (>=2.21.0)", "selenium (>=3.141.0,<=4.2.0)", "waitress (>=1.4.4)"]
 
 [[package]]
+name = "dash-mantine-components"
+version = "2.3.0"
+description = "Plotly Dash Components based on Mantine"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "dash_mantine_components-2.3.0-py3-none-any.whl", hash = "sha256:5e4995877bce9ee856002364d0975f924601511887263a12fd5aaa7d9f444cd5"},
+    {file = "dash_mantine_components-2.3.0.tar.gz", hash = "sha256:7400b75b1ca4e8b1bc8d8d1e07e5312c82770104791f0b8d12a832565e9eb628"},
+]
+
+[package.dependencies]
+dash = ">=2"
+
+[package.extras]
+dev = ["black", "build", "dash-iconify", "dash[ci,dev,testing] (>=2)", "pytest (<8.1.0)", "pyyaml (>=5.0)", "selenium (<4.3.0)", "wheel"]
+
+[[package]]
 name = "dnspython"
 version = "2.8.0"
 description = "DNS toolkit"
@@ -1138,4 +1156,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10"
-content-hash = "70bcea5456f6a66c79268eb3a20de8f9f1404c5bdfdd52a1a19eee809c1fef42"
+content-hash = "62148736d119f2cd8d50d7f56b41b24e79fc9256c9e913f68a7624686006e34e"

@@ -1,3 +1,4 @@
+import dash_mantine_components as dmc
 from dash import Dash
 from flask import url_for
 from .layout import layout
@@ -9,7 +10,8 @@ def init_dash(flask_app):
         server=flask_app,
         url_base_pathname='/aktualnosci/',
         suppress_callback_exceptions=True,
+        use_pages=True
     )
     dash_app.title = "Studenckie Koło Psychologii WAM"
-    dash_app.layout = layout
+    dash_app.layout = dmc.MantineProvider(layout)
     return dash_app
