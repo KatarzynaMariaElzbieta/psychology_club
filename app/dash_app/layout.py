@@ -1,63 +1,26 @@
 import dash
 import dash_mantine_components as dmc
 from dash import html, dcc
-from flask import url_for
-
-# layout = dmc.AppShell(
-#     [
-#         dmc.AppShellHeader(
-#             dmc.Group(
-#                 [
-#                     dmc.Burger(
-#                         id="burger",
-#                         size="sm",
-#                         hiddenFrom="sm",
-#                         opened=False,
-#                     ),
-#                     dmc.Title("Studenckie Koło Psychologii WAM", c="blue"),
-#                 ],
-#                 h="100%",
-#                 px="md",
-#             )
-#         ),
-# dmc.AppShellNavbar("Pasek nawigacyjny"),
-# dmc.AppShellAside("Panel boczny"),
-# dmc.AppShellMain("Treść główna"),
-# dmc.AppShellFooter("Stopka")
-# ],
-# padding = "md",
-# )
 
 logo_path = 'assets/images/logo-wam.png'
 
-
-menu_buttons = [dmc.Button(i, fullWidth=True) for i in ["Strona główna", "Artykuły", "Kalendarium", "Projekty"]]
-
-menu_items = ["Strona główna", "Artykuły", "Kalendarium", "Projekty"]
+menu_items = {"Strona główna": "/aktualnosci/", "Artykuły": "/aktualnosci/artykuly",
+              "Kalendarium": "/aktualnosci/kalendarium", "Projekty": "/aktualnosci/projekty"}
 
 # Jeden komponent dla przycisków
 menu_group = dmc.Group(
-    [dmc.Button(i, visibleFrom="md") for i in menu_items],
+    [dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()],
     id="menu-group",
     gap="sm"
 )
 
+dmc.Anchor(
+    "Underline on hover",
+    href="https://www.dash-mantine-components.com/",
+    target="_blank",
+    underline="hover",
+),
 
-def generate_card(number):
-    return dmc.CarouselSlide(dmc.Card(
-        [
-            dmc.CardSection(dmc.Text(number)),
-            dmc.CardSection(dmc.Image(
-                src="https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/images/bg-4.png"
-            )
-            ),
-            dmc.CardSection(dmc.Text("jakiś opis tego co się dzieje bla bla bla"))
-        ],
-        withBorder=True,
-        shadow="sm",
-        radius="md",
-        # w=350,
-    ))
 
 
 layout = dmc.AppShell(
@@ -73,10 +36,10 @@ layout = dmc.AppShell(
                                                           hiddenFrom="md",
                                                           size="sm",
                                                           color="white",
-
                                                           style={"padding-top": "1rem"})),
-                                dmc.MenuDropdown([dmc.MenuItem(i) for i in menu_items + ["Logowanie/Rejestracja"]],
-                                                 hiddenFrom="md"),
+                                dmc.MenuDropdown(
+                                    [dmc.MenuItem(i) for i in list(menu_items.keys()) + ["Logowanie/Rejestracja"]],
+                                    hiddenFrom="md"),
                             ],
 
                         ),
@@ -85,12 +48,16 @@ layout = dmc.AppShell(
                     dmc.Group(
                         [
                             menu_group,
-                            dmc.Button("Logowanie/Rejestracja", visibleFrom="md")
+                            dmc.Container(
+                                html.A("Logowanie/Rejestracja", href='/login', className="mantine-Anchor-root"),
+                                visibleFrom="md",
+                                m=0
+                            )
                         ],
                         px="md",
                         align="start",
                         justify="space-between",
-                        style={"width": "100%", "hight": "100%", "padding-bottom": "1rem"}
+                        style={"width": "100%", "hight": "100%", "padding-bottom": "1.3rem"}
                     )
                 ],
                     justify="center",
@@ -99,31 +66,16 @@ layout = dmc.AppShell(
                 ),
             ]),
         dmc.AppShellMain(
-            dmc.Center([
-            dmc.Carousel(
-                [
-                    generate_card(i) for i in range(1, 5)
-                ],
-                id="carousel-simple",
-                orientation="horizontal",
-                withControls=True,
-                withIndicators=True,
-                slideSize="33.3333%",
-                slideGap="md",
-                emblaOptions={"loop": True, "align": "start", "slidesToScroll": 1},
-                style={"margin": "1rem"}
-            )
-]),
-
+            dash.page_container  # <-- tu ładują się strony
         ),
         dmc.AppShellFooter([
             dmc.Group(
                 [
-                    dmc.Text("O nas"),
+                    dmc.Anchor("O nas", href="/_todo", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
                     dmc.Image(src=logo_path, w=130, fit="contain"),
-                    dmc.Text("A tu coś innegp"),
+                    dmc.Anchor("Kontakt", href="/_todo", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
                 ],
-                justify="space-between",
+                justify="space-around",
                 align="center"
             )
         ]),
@@ -134,7 +86,6 @@ layout = dmc.AppShell(
                     dcc.Link(f"{page['name']} - {page['path']}", href=page["relative_path"])
                 ) for page in dash.page_registry.values()
             ]),
-            dash.page_container
         ])
     ],
     header={
@@ -144,3 +95,7 @@ layout = dmc.AppShell(
         "height": 50,  # 👈 Rezerwuje miejsce na header
     },
 )
+
+
+
+

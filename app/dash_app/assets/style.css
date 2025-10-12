@@ -1,3 +1,30 @@
 .mantine-AppShell-header, .mantine-AppShell-footer {
     background-color: #1f2e4f;
 }
+
+.mantine-Carousel-controls {
+    margin-right: -5rem;
+    margin-left: -5rem;
+}
+
+.mantine-Anchor-root {
+    color: white;
+    font-weight: bolder;
+    font-size: 15px;
+    /*padding-top: 3px;*/
+    padding-right: 32px;
+}
+
+.padding_top_main {
+    padding-top: calc(6.25rem * var(--mantine-scale));
+}
+
+.card_number {
+    --text-fz: var(--mantine-font-size-xl);
+    --text-lh: var(--mantine-line-height-xl);
+    margin-top: 10px;
+    margin-right: 10px;
+    margin-bottom: calc(0.625rem * var(--mantine-scale));
+    margin-left: 10px;
+    font-size: 25px;
+}

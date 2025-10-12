@@ -1,13 +1,10 @@
 import dash
-from dash import Output, Input, callback, html
-import dash_mantine_components as dmc
-
-from ..layout import menu_items
-from ..layout import layout
+from dash import html
 
 
-dash.register_page(__name__, path='/artykul')  # rejestracja strony
-layout = html.Div("artykuł")
+
+dash.register_page(__name__, path='/kalendarium')  # rejestracja strony
+layout = html.Div("kalendarz")
 
 
 # @callback(

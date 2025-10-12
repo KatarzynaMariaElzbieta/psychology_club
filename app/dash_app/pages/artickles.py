@@ -6,8 +6,9 @@ from ..layout import menu_items
 from ..layout import layout
 
 
-dash.register_page(__name__, path='/artykul')  # rejestracja strony
 layout = html.Div("artykuł")
+dash.register_page(__name__, path='/artykuly', layout=layout)  # rejestracja strony
+
 
 
 # @callback(

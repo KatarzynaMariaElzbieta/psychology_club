@@ -1,6 +1,5 @@
 import dash_mantine_components as dmc
 from dash import Dash
-from flask import url_for
 from .layout import layout
 
 
