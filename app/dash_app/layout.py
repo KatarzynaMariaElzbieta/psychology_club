@@ -1,6 +1,7 @@
 import dash
 import dash_mantine_components as dmc
-from dash import html, dcc
+from dash import html, callback, Output, ALL, Input, callback_context, dcc
+from flask_login import current_user
 
 logo_path = 'assets/images/logo-wam.png'
 
@@ -8,11 +9,6 @@ menu_items = {"Strona główna": "/aktualnosci/", "Artykuły": "/aktualnosci/art
               "Kalendarium": "/aktualnosci/kalendarium", "Projekty": "/aktualnosci/projekty"}
 
 # Jeden komponent dla przycisków
-menu_group = dmc.Group(
-    [dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()],
-    id="menu-group",
-    gap="sm"
-)
 
 dmc.Anchor(
     "Underline on hover",
@@ -20,8 +16,6 @@ dmc.Anchor(
     target="_blank",
     underline="hover",
 ),
-
-
 
 layout = dmc.AppShell(
     children=[
@@ -38,7 +32,8 @@ layout = dmc.AppShell(
                                                           color="white",
                                                           style={"padding-top": "1rem"})),
                                 dmc.MenuDropdown(
-                                    [dmc.MenuItem(i) for i in list(menu_items.keys()) + ["Logowanie/Rejestracja"]],
+                                    [],
+                                    id="menu_burger",
                                     hiddenFrom="md"),
                             ],
 
@@ -47,9 +42,9 @@ layout = dmc.AppShell(
                     ),
                     dmc.Group(
                         [
-                            menu_group,
+                            dmc.Group(id="menu_items", gap="sm"),
                             dmc.Container(
-                                html.A("Logowanie/Rejestracja", href='/login', className="mantine-Anchor-root"),
+                                id="login_logout_desktop",
                                 visibleFrom="md",
                                 m=0
                             )
@@ -69,6 +64,7 @@ layout = dmc.AppShell(
             dash.page_container  # <-- tu ładują się strony
         ),
         dmc.AppShellFooter([
+            dcc.Location(id="url"),
             dmc.Group(
                 [
                     dmc.Anchor("O nas", href="/_todo", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
@@ -79,14 +75,6 @@ layout = dmc.AppShell(
                 align="center"
             )
         ]),
-        html.Div([
-            html.H1('Multi-page app with Dash Pages'),
-            html.Div([
-                html.Div(
-                    dcc.Link(f"{page['name']} - {page['path']}", href=page["relative_path"])
-                ) for page in dash.page_registry.values()
-            ]),
-        ])
     ],
     header={
         "height": 70,  # 👈 Rezerwuje miejsce na header
@@ -97,5 +85,30 @@ layout = dmc.AppShell(
 )
 
 
+@callback(
+    Output("login_logout_desktop", "children"),
+    Output("menu_items", "children"),
+    Output("menu_burger", "children"),
+    Input("url", "pathname"),
+)
+def login_logout(_):
+    if current_user and current_user.is_authenticated:
+        menu_items["Dodaj artykuł"] = "/aktualnosci/nowy_artykul"
+        return (
+            html.A("Wyloguj", href="/logout", className="mantine-Anchor-root"),
+            [
+                dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()
+            ],
+                [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())]+
+                [dmc.MenuItem(html.A("Wyloguj", href="/logout"))],
 
-
+        )
+    else:
+        return (
+            html.A("Logowanie", href="/login", className="mantine-Anchor-root"),
+            [
+                dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()
+            ],
+                [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())] +
+                [dmc.MenuItem(html.A("Logowanie", href="/login"))],
+        )
