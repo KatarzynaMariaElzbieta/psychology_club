@@ -44,7 +44,8 @@ def serve_layout():
                 "sticky": True,
                 "controlsGroups": [
                     ["Bold", "Italic", "Underline", "Code"],
-                    ["H1", "H2", "H3"],
+                    ["H1", "H2", "H3", "H4", "H5", "H6"],
+                    ["Strikethrough", "ClearFormatting", "Blockquote"],
                     ["BulletList", "OrderedList"],
                     ["Link", "Unlink"],
                     ["Undo", "Redo"],
