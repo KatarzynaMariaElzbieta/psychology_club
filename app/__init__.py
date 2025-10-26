@@ -40,9 +40,6 @@ def create_app():
     from app.dash_app import init_dash
     init_dash(app)
 
-    print("Registered routes:")
-    for rule in app.url_map.iter_rules():
-        print(rule)
 
     @app.route('/')
     def index():
