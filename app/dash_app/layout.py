@@ -2,11 +2,18 @@ import dash
 import dash_mantine_components as dmc
 from dash import html, callback, Output, ALL, Input, callback_context, dcc
 from flask_login import current_user
+from flask import current_app, url_for
 
-logo_path = 'assets/images/logo-wam.png'
+logo2_path = '/static/local/logo-wam.png'
+logo_path = '/static/local/LOGO.svg'
 
-menu_items = {"Strona główna": "/aktualnosci/", "Artykuły": "/aktualnosci/artykuly",
-              "Kalendarium": "/aktualnosci/kalendarium", "Projekty": "/aktualnosci/projekty"}
+
+def return_logo_path(path):
+    return url_for("dash_app", filename=path)
+
+
+menu_items = {"Strona główna": "/", "Artykuły": "/artykuly",
+              "Kalendarium": "/kalendarium", "Projekty": "/projekty"}
 
 # Jeden komponent dla przycisków
 
@@ -61,26 +68,37 @@ layout = dmc.AppShell(
                 ),
             ]),
         dmc.AppShellMain(
-            dash.page_container  # <-- tu ładują się strony
+            [
+                dmc.Affix(dmc.Image(src=logo2_path, w=150),
+                          position={"top": "70", "right": "lg"}
+                          ),
+                dash.page_container  # <-- tu ładują się strony
+
+            ],
         ),
         dmc.AppShellFooter([
             dcc.Location(id="url"),
             dmc.Group(
                 [
-                    dmc.Anchor("O nas", href="/_todo", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
-                    dmc.Image(src=logo_path, w=130, fit="contain"),
-                    dmc.Anchor("Kontakt", href="/_todo", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
+                    dmc.Anchor("O nas", href="/o-nas", visibleFrom="md", style={"margin-bottom": "0.5rem"}),\
+                    dmc.Affix(dmc.Image(src=logo_path, w=100, fit="contain",
+                                        style={"border": "solid", "color": "#1f2e4f"}
+                              ), position={"bottom": "-10", "right": "50%"}),
+                    dmc.Anchor("Kontakt", href="/kontakt", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
                 ],
+                h="100%",
                 justify="space-around",
                 align="center"
             )
-        ]),
+        ],
+        # style={"position": "relative"}
+        ),
     ],
     header={
         "height": 70,  # 👈 Rezerwuje miejsce na header
     },
     footer={
-        "height": 50,  # 👈 Rezerwuje miejsce na header
+        "height": 60,  # 👈 Rezerwuje miejsce na footer
     },
 )
 
@@ -95,20 +113,22 @@ def login_logout(_):
     if current_user and current_user.is_authenticated:
         menu_items["Dodaj artykuł"] = "/aktualnosci/nowy_artykul"
         return (
-            html.A("Wyloguj", href="/logout", className="mantine-Anchor-root"),
+            html.A("Wyloguj", href="/auth/logout", className="mantine-Anchor-root"),
             [
                 dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()
             ],
-                [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())]+
-                [dmc.MenuItem(html.A("Wyloguj", href="/logout"))],
+            [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())] +
+            [dmc.MenuItem(html.A("Wyloguj", href="/auth/logout"))],
 
         )
     else:
+        if "Dodaj artykuł" in menu_items.keys():
+            menu_items.pop("Dodaj artykuł")
         return (
-            html.A("Logowanie", href="/login", className="mantine-Anchor-root"),
+            html.A("Logowanie", href="/auth/login", className="mantine-Anchor-root"),
             [
                 dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()
             ],
-                [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())] +
-                [dmc.MenuItem(html.A("Logowanie", href="/login"))],
+            [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())] +
+            [dmc.MenuItem(html.A("Logowanie", href="/auth/login"))],
         )

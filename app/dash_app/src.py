@@ -1,3 +1,5 @@
+import dash_mantine_components as dmc
+
 from flask_security import current_user
 from dash import dcc
 from dash.exceptions import PreventUpdate
@@ -32,3 +34,4 @@ def require_roles(*roles, redirect_to=None):
         return wrapper
 
     return decorator
+

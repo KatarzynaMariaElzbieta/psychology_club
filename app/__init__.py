@@ -20,6 +20,8 @@ def create_app():
     app.config['SECURITY_CONFIRMABLE'] = False
     app.config['SECURITY_PASSWORD_SALT'] = os.getenv('SECURITY_PASSWORD_SALT')
     app.config['SECURITY_PASSWORD_HASH'] = 'bcrypt'
+    app.config["SECURITY_URL_PREFIX"] = "/auth"
+    app.config["SECURITY_REMEMBER_ME"] = True
 
     db.init_app(app)
     migrate.init_app(app, db)

@@ -2,11 +2,12 @@ import dash
 from dash import Output, Input, callback, html
 import dash_mantine_components as dmc
 
+from .callendar import site_in_build
 from ..layout import menu_items
 from ..layout import layout
 
 
-layout = html.Div("artykuł")
+layout = site_in_build
 dash.register_page(__name__, path='/artykuly', layout=layout)  # rejestracja strony
 
 

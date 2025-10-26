@@ -16,7 +16,7 @@
 }
 
 .padding_top_main {
-    padding-top: calc(6.25rem * var(--mantine-scale));
+    padding-top: calc(3.25rem * var(--mantine-scale));
 }
 
 .card_number {
