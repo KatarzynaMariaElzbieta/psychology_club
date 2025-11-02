@@ -30,6 +30,7 @@ jobs:
       POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
       POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
       DATABASE_URL: postgresql+psycopg2://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@${{ secrets.POSTGRES_HOST }}:5432/${{ secrets.POSTGRES_DB }}
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@${{ secrets.POSTGRES_HOST }}:5432/${{ secrets.POSTGRES_DB }}
       FLASK_APP: app:create_app
       FLASK_ENV: testing
 
