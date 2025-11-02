@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: psychology-service
+spec:
+  selector:
+    app: psychology-app
+  ports:
+    - protocol: TCP
+      port: 80        # port, na którym Service nasłuchuje
+      targetPort: 5000  # port aplikacji Flask
+  type: ClusterIP

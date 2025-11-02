@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: psychology-app
+  labels:
+    app: psychology-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: psychology-app
+  template:
+    metadata:
+      labels:
+        app: psychology-app
+    spec:
+      containers:
+        - name: psychology-app
+          image: ghcr.io/KatarzynaMariaElzbieta/psychology_app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000  # Flask domyślnie działa na 5000
+          env:
+            - name: FLASK_ENV
+              value: production
+            - name: SQLALCHEMY_DATABASE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: psychology-db
+                  key: DATABASE_URL
+      imagePullSecrets:
+        - name: ghcr-login
