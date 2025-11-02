@@ -22,6 +22,7 @@ dependencies = [
     "dash-iconify (>=0.1.2,<0.2.0)",
     "bleach (>=6.2.0,<7.0.0)",
     "dash-extensions (>=2.0.4,<3.0.0)",
+    "tinycss2 (>=1.4.0,<2.0.0)",
 ]
 
 

@@ -83,7 +83,7 @@ layout = dmc.AppShell(
                     dmc.Anchor("O nas", href="/o-nas", visibleFrom="md", style={"margin-bottom": "0.5rem"}),\
                     dmc.Affix(dmc.Image(src=logo_path, w=100, fit="contain",
                                         style={"border": "solid", "color": "#1f2e4f"}
-                              ), position={"bottom": "-10", "right": "50%"}),
+                              ), position={"bottom": "-10", "right": "47%"}),
                     dmc.Anchor("Kontakt", href="/kontakt", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
                 ],
                 h="100%",
