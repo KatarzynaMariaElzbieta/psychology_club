@@ -35,6 +35,12 @@ def serve_layout():
             id="article-title-input",
             required=True,
         ),
+        dmc.TextInput(
+            label="Skrócona wersja do podglądu",
+            placeholder="Wpisz krótki opis artykułu (do 255 znaków)",
+            id="article-short-input",
+            required=True,
+        ),
         dmc.RichTextEditor(
             id="article-editor",
             html="",
@@ -83,18 +89,19 @@ layout = serve_layout
     Output("save-article-btn", "children"),
     Input("save-article-btn", "n_clicks"),
     State("article-title-input", "value"),
+    State("article-short-input", "value"),
     State("article-editor", "html"),
     State("framework-tags-input", "value"),
     State("main-image-store", "data"),
     State("uploaded-images-preview", "children"),
     prevent_initial_call=True,
 )
-def save_article(n_clicks, title, content, tags, main_image, previews):
+def save_article(n_clicks, title, short_content, content, tags, main_image, previews):
     if not title or not content:
         return "⚠️ Uzupełnij wszystkie pola!"
 
     # --- Utwórz nowy artykuł ---
-    article = Article(title=title.strip(), content=content)
+    article = Article(title=title.strip(), content=content, short_content=short_content)
     article.authors.append(current_user)
 
     # --- Tagi ---
