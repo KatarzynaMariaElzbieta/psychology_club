@@ -1,3 +1,5 @@
+import bleach
+from bleach.css_sanitizer import CSSSanitizer
 import dash_mantine_components as dmc
 
 from flask_security import current_user
@@ -35,3 +37,26 @@ def require_roles(*roles, redirect_to=None):
 
     return decorator
 
+
+def prepare_html(content):
+    allowed_tags = [
+        "p", "br", "img", "h1", "h2", "h3", "h4", "b", "i", "strong", "em",
+        "ul", "ol", "li", "a", "blockquote", "figure", "figcaption"
+    ]
+    allowed_attrs = {
+        "img": ["src", "alt", "style"],
+        "a": ["href", "title", "target", "rel"],
+        "p": ["style"],
+    }
+    allowed_styles = [
+        "color", "font-weight", "font-style", "text-decoration",
+        "text-align", "background-color", "margin", "padding",
+    ]
+    css_sanitizer = CSSSanitizer(allowed_css_properties=allowed_styles)
+    return bleach.clean(
+        content,
+        tags=allowed_tags,
+        attributes=allowed_attrs,
+        css_sanitizer=css_sanitizer,
+        strip=True
+    )
