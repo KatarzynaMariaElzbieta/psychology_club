@@ -16,7 +16,7 @@ jobs:
           POSTGRES_USER: psyuser
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: psychology_test
-          POSTGRES_HOST: psychology_test
+          POSTGRES_HOST: localhost
         ports: ['5432:5432']
         options: >-
           --health-cmd="pg_isready -U psyuser"
