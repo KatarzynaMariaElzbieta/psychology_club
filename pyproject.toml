@@ -6,6 +6,8 @@ authors = [
     {name = "katarzynamariaelzbieta",email = "kasia.gajc@wp.pl"}
 ]
 readme = "README.md"
+package-mode = false
+
 requires-python = ">=3.11"
 dependencies = [
     "flask (>=3.1.2,<4.0.0)",

@@ -44,7 +44,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install poetry
+          pip install poetry --no-root
           poetry install
 
       - name: Wait for DB to be ready
