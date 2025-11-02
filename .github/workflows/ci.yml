@@ -1,12 +1,16 @@
-name: CI
+name: CI - Build & Test Flask + Dash
 
 on:
   push:
-    branches: [main]
+    branches: [ main, master ]
   pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  build-test:
     runs-on: ubuntu-latest
 
     services:
@@ -14,51 +18,50 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_USER: psyuser
-          POSTGRES_PASSWORD: testpass
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: psychology_test
-          POSTGRES_HOST: localhost
-        ports: ['5432:5432']
+        ports:
+          - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U psyuser"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          --health-cmd "pg_isready -U psyuser -d psychology_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     env:
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-      DATABASE_URL: postgresql+psycopg2://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@${{ secrets.POSTGRES_HOST }}:5432/${{ secrets.POSTGRES_DB }}
-      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@${{ secrets.POSTGRES_HOST }}:5432/${{ secrets.POSTGRES_DB }}
-      FLASK_APP: app:create_app
+      DATABASE_URL: postgresql+psycopg2://psyuser:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432/psychology_test
+      FLASK_APP: app
       FLASK_ENV: testing
 
     steps:
-      - name: Checkout repo
+      - name: 📦 Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install poetry
-          poetry install --no-root
+      - name: 🧰 Install Poetry
+        run: pip install poetry
 
-      - name: Wait for DB to be ready
-        run: |
-          until pg_isready -h localhost -p 5432 -U psyuser; do
-            echo "Waiting for postgres..."
-            sleep 2
-          done
+      - name: 🧩 Install dependencies
+        run: poetry install --no-interaction --no-root
 
-      - name: Run migrations
-        run: |
-          poetry run flask db upgrade
+      - name: 🏗️ Build Docker image
+        run: docker build -t psychology_app .
 
-      - name: Run tests
-        run: |
-          poetry run pytest -v
+      - name: 🧬 Apply migrations
+        run: poetry run flask db upgrade
+
+      - name: ✅ Run tests
+        run: poetry run pytest -v --disable-warnings
+
+      - name: 🧹 Lint (flake8)
+        run: poetry run flake8 app || true
+
+      - name: 📦 Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: psychology_app_image
+          path: .
