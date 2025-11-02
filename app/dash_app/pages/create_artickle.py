@@ -54,6 +54,7 @@ def serve_layout():
                     ["Strikethrough", "ClearFormatting", "Blockquote"],
                     ["BulletList", "OrderedList"],
                     ["Link", "Unlink"],
+                    ["AlignLeft", "AlignCenter", "AlignJustify", "AlignRight"],
                     ["Undo", "Redo"],
                 ],
             },

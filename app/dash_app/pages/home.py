@@ -30,8 +30,8 @@ def generate_card(number, article):
             dmc.CardSection(
                 [dmc.Title(article.title, order=4),
                  dmc.Text([
-                     "Opis tego co się dzieje" + "x "*114,
-                     dmc.Anchor(" Czytaj dalej >", href=f"artykul/{article.id}",
+                     article.short_content,
+                     dmc.Anchor(" Czytaj dalej>", href=f"artykul/{article.id}",
                                 style={"color": "Blue", "align": "right", "font-weight": "normal"})
 
                  ]),
