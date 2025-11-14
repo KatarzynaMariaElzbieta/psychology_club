@@ -2,23 +2,25 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Zainstaluj Poetry
-RUN pip install --no-cache-dir poetry
+# Install system deps
+RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
 
-# 🔑 Najważniejsze: wyłącz tworzenie .venv i instaluj zależności globalnie
+# Install Poetry
+RUN pip install --no-cache-dir poetry
 RUN poetry config virtualenvs.create false
 
-# Skopiuj pliki projektu
+# Copy dependency files first
 COPY pyproject.toml poetry.lock* ./
 
-# Zainstaluj zależności bez budowania projektu
+# Install deps
 RUN poetry install --no-root --no-interaction --no-ansi
 
-# Skopiuj cały kod źródłowy
+# Copy source code
 COPY . .
 
-# Ustawienie zmiennych środowiskowych
+# Railway uses port 8080
+ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
 
-# Domyślny CMD
-CMD ["flask", "run", "--host=0.0.0.0"]
+# Start production server
+CMD ["poetry", "run", "gunicorn", "-w", "2", "-b", "0.0.0.0:8080", "wsgi:app"]
