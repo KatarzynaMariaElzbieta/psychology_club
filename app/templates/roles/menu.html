@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Role – Panel administracyjny{% endblock %}
+
+{% block content %}
+<h1>Lista ról</h1>
+
+<p><a href="{{ url_for('roles.create_role') }}">➕ Dodaj nową rolę</a></p>
+
+<ul>
+  {% for r in roles %}
+    <li>
+      <strong>{{ r.name }}</strong> — {{ r.description or "Brak opisu" }}
+      &nbsp; | &nbsp;
+      <a href="{{ url_for('roles.assign_role', role_name=r.name) }}">Przypisz użytkowników</a>
+    </li>
+  {% endfor %}
+</ul>
+
+{% endblock %}

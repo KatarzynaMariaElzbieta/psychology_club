@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Przypisz użytkowników{% endblock %}
+
+{% block content %}
+<h1>Przypisz użytkowników do roli: {{ role.name }}</h1>
+
+<form method="POST">
+
+  {% for user in users %}
+    <div style="margin-bottom:6px;">
+      <input
+          type="checkbox"
+          name="users"
+          value="{{ user.id }}"
+          {% if role in user.roles %}checked{% endif %}
+      >
+      {{ user.email }}
+    </div>
+  {% endfor %}
+
+  <button type="submit" style="margin-top:10px;">Zapisz</button>
+</form>
+
+<p><a href="{{ url_for('roles.list_roles') }}">⬅ Powrót</a></p>
+
+{% endblock %}
