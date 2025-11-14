@@ -40,6 +40,8 @@ def create_app():
     from app.dash_app import init_dash
     init_dash(app)
 
+    from app.views.roles import roles_bp
+    app.register_blueprint(roles_bp)
 
     @app.route('/')
     def index():

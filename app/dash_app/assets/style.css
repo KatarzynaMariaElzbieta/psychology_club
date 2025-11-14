@@ -35,3 +35,7 @@
     height: auto;
     width: auto;
 }
+
+.mantine-Card-root {
+    height: 27rem;
+}
