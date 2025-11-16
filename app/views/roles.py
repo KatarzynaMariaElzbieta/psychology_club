@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_security import roles_accepted
-from app.extensions import db
-from flask_security import SQLAlchemyUserDatastore
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_security import SQLAlchemyUserDatastore, roles_accepted
+
 from app import models
+from app.extensions import db
 
 roles_bp = Blueprint("roles", __name__, url_prefix="/roles")
 
@@ -11,7 +11,7 @@ user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
 
 # --- Lista ról ---
 @roles_bp.route("/menu")
-# @roles_accepted("admin")
+@roles_accepted("admin")
 def list_roles():
     roles = models.Role.query.all()
     return render_template("roles/menu.html", roles=roles)
@@ -19,7 +19,7 @@ def list_roles():
 
 # --- Dodawanie nowej roli ---
 @roles_bp.route("/create", methods=["GET", "POST"])
-# @roles_accepted("admin")
+@roles_accepted("admin")
 def create_role():
     if request.method == "POST":
         name = request.form.get("name")
@@ -44,7 +44,7 @@ def create_role():
 
 # --- Przypisywanie użytkowników do roli ---
 @roles_bp.route("/<role_name>/assign", methods=["GET", "POST"])
-# @roles_accepted("admin")
+@roles_accepted("admin")
 def assign_role(role_name):
     role = user_datastore.find_role(role_name)
     if not role:
