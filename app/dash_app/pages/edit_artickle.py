@@ -11,10 +11,10 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.dash_app.src import url_for_uploads
+from app.dash_app.src import require_roles, url_for_uploads
 from app.models import Article, Image, Tag
 
-dash.register_page(__name__, path_template='/edytuj_artykul/<id>')
+dash.register_page(__name__, path_template="/edytuj_artykul/<id>")
 layout = html.Div(
     [
         dmc.Container(
@@ -61,10 +61,11 @@ layout = html.Div(
             p="xl",
         )
     ],
-    id="edit-article-content")
+    id="edit-article-content",
+)
 
 
-# @login_required
+@require_roles("admin")
 def serve_edit_layout(article_id):
     article = Article.query.get_or_404(article_id)
 
@@ -119,7 +120,7 @@ def serve_edit_layout(article_id):
         [tag.name for tag in article.tags],
         previews,
         article.id,
-        main_image
+        main_image,
     )
 
 
@@ -132,16 +133,16 @@ def serve_edit_layout(article_id):
     Output("article-id-store", "data"),
     Output("main-image-store_edit", "data", allow_duplicate=True),
     Input("url", "pathname"),
-    prevent_initial_call='initial_duplicate',
-
+    prevent_initial_call="initial_duplicate",
 )
 def load_article_for_edit(pathname):
     try:
         article_id = int(pathname.split("/")[-1])
     except (ValueError, IndexError):
-        return [dmc.Text("Nieprawidłowy adres artykułu")]+ [None for _ in range(5)]
+        return [dmc.Text("Nieprawidłowy adres artykułu")] + [None for _ in range(5)]
     result = serve_edit_layout(article_id)
     return result
+
 
 # ========================
 # ZAPIS EDYCJI ARTYKUŁU
@@ -201,7 +202,7 @@ def save_article_edit(n_clicks, title, short_content, content, tags, main_image,
     State("upload-image_edit", "filename"),
     State("uploaded-images_", "children"),
     State("article-editor", "html"),
-    prevent_initial_call='initial_duplicate',
+    prevent_initial_call="initial_duplicate",
 )
 def upload_image(contents, filename, current_preview, editor_content):
     if not contents:
@@ -252,7 +253,7 @@ def upload_image(contents, filename, current_preview, editor_content):
     Input({"type": "set-main-btn", "index": dash.ALL}, "n_clicks"),
     State({"type": "set-main-btn", "index": dash.ALL}, "id"),
     State("uploaded-images_", "children"),
-    prevent_initial_call='initial_duplicate',
+    prevent_initial_call="initial_duplicate",
 )
 def set_main_image(n_clicks, btn_ids, previews):
     if not n_clicks or all(v is None for v in n_clicks):
