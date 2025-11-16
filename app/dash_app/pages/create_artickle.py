@@ -2,85 +2,81 @@ import base64
 import os
 import uuid
 
+import dash
+import dash_mantine_components as dmc
+from dash import Input, Output, State, callback, dcc, html
+from dash.exceptions import PreventUpdate
+from flask import current_app, url_for
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
-import dash
-from dash import html, Input, Output, State, callback, dcc
-import dash_mantine_components as dmc
-from flask import current_app, url_for
-from dash.exceptions import PreventUpdate
-
 from app import db
-from app.models import Image, Tag, Article
-
+from app.models import Article, Image, Tag
 
 dash.register_page(__name__, path="/nowy_artykul", name="Nowy artykuł")
 
 
 def get_upload_folder():
-    folder = os.path.join(current_app.root_path, "static", "uploads")
-    os.makedirs(folder, exist_ok=True)
-    return folder
+    return current_app.config["UPLOAD_FOLDER"]
 
 
 # @require_roles("editor", redirect_to="/no-access")
 @login_required
 def serve_layout():
     return dmc.Container(
-    [
-        dmc.TextInput(
-            label="Tytuł artykułu",
-            placeholder="Wpisz tytuł",
-            id="article-title-input",
-            required=True,
-        ),
-        dmc.TextInput(
-            label="Skrócona wersja do podglądu",
-            placeholder="Wpisz krótki opis artykułu (do 255 znaków)",
-            id="article-short-input",
-            required=True,
-        ),
-        dmc.RichTextEditor(
-            id="article-editor",
-            html="",
-            mih=300,
-            mb=20,
-            toolbar={
-                "sticky": True,
-                "controlsGroups": [
-                    ["Bold", "Italic", "Underline", "Code"],
-                    ["H1", "H2", "H3", "H4", "H5", "H6"],
-                    ["Strikethrough", "ClearFormatting", "Blockquote"],
-                    ["BulletList", "OrderedList"],
-                    ["Link", "Unlink"],
-                    ["AlignLeft", "AlignCenter", "AlignJustify", "AlignRight"],
-                    ["Undo", "Redo"],
-                ],
-            },
-        ),
-        # 🔹 Upload sekcja
-        dcc.Upload(
-            id="upload-image",
-            children=dmc.Button("📷 Dodaj obraz", variant="light", size="xs"),
-            multiple=False,
-            accept="image/*",
-        ),
-        html.Div(id="uploaded-images-preview", style={"marginTop": "1rem"}),  # <– miniatury
-        dcc.Store(id="main-image-store"),  # <– zapamiętuje główny obraz
+        [
+            dmc.TextInput(
+                label="Tytuł artykułu",
+                placeholder="Wpisz tytuł",
+                id="article-title-input",
+                required=True,
+            ),
+            dmc.TextInput(
+                label="Skrócona wersja do podglądu",
+                placeholder="Wpisz krótki opis artykułu (do 255 znaków)",
+                id="article-short-input",
+                required=True,
+            ),
+            dmc.RichTextEditor(
+                id="article-editor",
+                html="",
+                mih=300,
+                mb=20,
+                toolbar={
+                    "sticky": True,
+                    "controlsGroups": [
+                        ["Bold", "Italic", "Underline", "Code"],
+                        ["H1", "H2", "H3", "H4", "H5", "H6"],
+                        ["Strikethrough", "ClearFormatting", "Blockquote"],
+                        ["BulletList", "OrderedList"],
+                        ["Link", "Unlink"],
+                        ["AlignLeft", "AlignCenter", "AlignJustify", "AlignRight"],
+                        ["Undo", "Redo"],
+                    ],
+                },
+            ),
+            # 🔹 Upload sekcja
+            dcc.Upload(
+                id="upload-image",
+                children=dmc.Button("📷 Dodaj obraz", variant="light", size="xs"),
+                multiple=False,
+                accept="image/*",
+            ),
+            html.Div(id="uploaded-images-preview", style={"marginTop": "1rem"}),  # <– miniatury
+            dcc.Store(id="main-image-store"),  # <– zapamiętuje główny obraz
+            dmc.TagsInput(
+                label="Tagi",
+                placeholder="Dodaj tagi",
+                id="framework-tags-input",
+                value=["psychologia", "relacje"],
+                mb=20,
+            ),
+            dmc.Button("💾 Zapisz artykuł", id="save-article-btn", color="teal"),
+        ],
+        size="lg",
+        p="xl",
+    )
 
-        dmc.TagsInput(
-            label="Tagi",
-            placeholder="Dodaj tagi",
-            id="framework-tags-input",
-            value=["psychologia", "relacje"],
-            mb=20,
-        ),
-        dmc.Button("💾 Zapisz artykuł", id="save-article-btn", color="teal"),
-    ],
-    size="lg",
-    p="xl",
-)
 
 layout = serve_layout
 # ========================
@@ -119,7 +115,7 @@ def save_article(n_clicks, title, short_content, content, tags, main_image, prev
     uploaded_urls = []
     for thumb in previews or []:
         img_src = thumb["props"]["children"][0]["props"]["src"]
-        rel_path = img_src.replace(current_app.static_url_path + "/", "")
+        # rel_path = img_src.replace(current_app.static_url_path + "/", "")
         img = Image(file_path=rel_path, is_main=(main_image in img_src))
         article.images.append(img)
         uploaded_urls.append(img_src)
@@ -141,7 +137,6 @@ def save_article(n_clicks, title, short_content, content, tags, main_image, prev
     State("upload-image", "filename"),
     State("uploaded-images-preview", "children"),
     State("article-editor", "html"),
-
     prevent_initial_call=True,
 )
 def upload_image(contents, filename, current_preview, editor_content):
@@ -164,7 +159,6 @@ def upload_image(contents, filename, current_preview, editor_content):
 
     img_url = url_for("static", filename=f"uploads/{safe_name}")
     new_content = (editor_content or "") + f'<p><img src="{img_url}" style="max-width:700px;"></p>'
-
 
     # Miniatura + przycisk „ustaw jako główny”
     thumb = dmc.Paper(
