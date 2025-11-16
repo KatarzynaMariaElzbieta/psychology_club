@@ -45,7 +45,6 @@ layout = html.Div(
                     multiple=False,
                     accept="image/*",
                 ),
-                html.Button("click_me", id="input_button"),
                 html.Div(id="uploaded-images_", children=[], style={"marginTop": "1rem"}),
                 dcc.Store(id="main-image-store_edit", data=""),
                 dmc.TagsInput(
@@ -55,9 +54,8 @@ layout = html.Div(
                     value=[],
                     mb=20,
                 ),
-                dmc.Button("💾 Zapisz zmiany", id="save-article-btn", color="teal"),
+                dmc.Button("💾 Zapisz zmiany", id="save-article-btn_edit", color="teal"),
                 dcc.Store(id="article-id-store", data=""),
-                html.Div(id="output_div")
             ],
             size="lg",
             p="xl",
@@ -77,11 +75,9 @@ def serve_edit_layout(article_id):
 
         file_path = os.path.join(current_app.config["UPLOAD_FOLDER"], img.file_path)
         if not os.path.exists(file_path):
-            print(f"Brak pliku fizycznego: {file_path}, używam placeholdera")
             img_url = url_for_uploads("8a57a97cab424295a53e1f133c823e2d.jpg")
         else:
             img_url = url_for_uploads(img.file_path)
-        print(f"{img_url=}")
         border_color = "gold" if img.is_main else "transparent"
         btn_label = "🌟 Główny obraz" if img.is_main else "⭐ Ustaw jako główny"
         btn_color = "yellow" if img.is_main else "gray"
@@ -143,56 +139,56 @@ def load_article_for_edit(pathname):
     try:
         article_id = int(pathname.split("/")[-1])
     except (ValueError, IndexError):
-        return dmc.Text("Nieprawidłowy adres artykułu")
+        return [dmc.Text("Nieprawidłowy adres artykułu")]+ [None for _ in range(5)]
     result = serve_edit_layout(article_id)
     return result
 
-# # ========================
-# # ZAPIS EDYCJI ARTYKUŁU
-# # ========================
-# @callback(
-#     Output("save-article-btn", "children"),
-#     Input("save-article-btn", "n_clicks"),
-#     State("article-title-input", "value"),
-#     State("article-short-input", "value"),
-#     State("article-editor", "html"),
-#     State("framework-tags-input", "value"),
-#     State("main-image-store", "data"),
-#     State("uploaded-images_", "children"),
-#     State("article-id-store", "data"),
-#     prevent_initial_call=True,
-# )
-# def save_article_edit(n_clicks, title, short_content, content, tags, main_image, previews, article_id):
-#     if not title or not content:
-#         return "⚠️ Uzupełnij wszystkie pola!"
-#
-#     article = Article.query.get_or_404(article_id)
-#     article.title = title.strip()
-#     article.short_content = short_content
-#     article.content = content
-#
-#     # --- Tagi ---
-#     tag_objects = []
-#     for tag_name in tags or []:
-#         tag = Tag.query.filter_by(name=tag_name).first()
-#         if not tag:
-#             tag = Tag(name=tag_name)
-#             db.session.add(tag)
-#         tag_objects.append(tag)
-#     article.tags = tag_objects
-#
-#     # --- Obrazy ---
-#     article.images = []  # opcjonalnie wyczyść stare obrazy
-#     uploaded_urls = []
-#     for thumb in previews or []:
-#         img_src = thumb["props"]["children"][0]["props"]["src"]
-#         rel_path = img_src.replace(current_app.static_url_path + "/", "")
-#         img = Image(file_path=rel_path, is_main=(main_image in img_src))
-#         article.images.append(img)
-#         uploaded_urls.append(img_src)
-#
-#     db.session.commit()
-#     return "✅ Artykuł zaktualizowany!"
+# ========================
+# ZAPIS EDYCJI ARTYKUŁU
+# ========================
+@callback(
+    Output("save-article-btn_edit", "children"),
+    Input("save-article-btn_edit", "n_clicks"),
+    State("article-title-input", "value"),
+    State("article-short-input", "value"),
+    State("article-editor", "html"),
+    State("framework-tags-input", "value"),
+    State("main-image-store_edit", "data"),
+    State("uploaded-images_", "children"),
+    State("article-id-store", "data"),
+    # prevent_initial_call=True,
+)
+def save_article_edit(n_clicks, title, short_content, content, tags, main_image, previews, article_id):
+    if not title or not content:
+        return "⚠️ Uzupełnij wszystkie pola!"
+
+    article = Article.query.get_or_404(article_id)
+    article.title = title.strip()
+    article.short_content = short_content
+    article.content = content
+
+    # --- Tagi ---
+    tag_objects = []
+    for tag_name in tags or []:
+        tag = Tag.query.filter_by(name=tag_name).first()
+        if not tag:
+            tag = Tag(name=tag_name)
+            db.session.add(tag)
+        tag_objects.append(tag)
+    article.tags = tag_objects
+
+    # --- Obrazy ---
+    article.images = []  # opcjonalnie wyczyść stare obrazy
+    uploaded_urls = []
+    for thumb in previews or []:
+        img_src = thumb["props"]["children"][0]["props"]["src"]
+        rel_path = img_src.replace("/media" + "/", "")
+        img = Image(file_path=rel_path, is_main=(main_image in img_src))
+        article.images.append(img)
+        uploaded_urls.append(img_src)
+
+    db.session.commit()
+    return "✅ Artykuł zaktualizowany!"
 
 
 # ========================

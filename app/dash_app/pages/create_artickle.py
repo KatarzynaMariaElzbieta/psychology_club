@@ -116,7 +116,7 @@ def save_article(n_clicks, title, short_content, content, tags, main_image, prev
     uploaded_urls = []
     for thumb in previews or []:
         img_src = thumb["props"]["children"][0]["props"]["src"]
-        # rel_path = img_src.replace(current_app.static_url_path + "/", "")
+        rel_path = img_src.replace("/media" + "/", "")
         img = Image(file_path=rel_path, is_main=(main_image in img_src))
         article.images.append(img)
         uploaded_urls.append(img_src)
@@ -159,7 +159,7 @@ def upload_image(contents, filename, current_preview, editor_content):
         f.write(img_bytes)
 
     img_url = url_for_uploads(safe_name)
-    new_content = (editor_content or "") + f'<p><img src="{img_url}" style="max-width:700px;"></p>'
+    new_content = (editor_content or "") + f'<p ><img src="{img_url}" style="max-width:700px;"></p>'
 
     # Miniatura + przycisk „ustaw jako główny”
     thumb = dmc.Paper(

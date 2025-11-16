@@ -3,6 +3,7 @@ from flask import url_for
 
 import dash_mantine_components as dmc
 
+from ..src import url_for_uploads
 from ... import db
 from ...models import Article
 
@@ -14,7 +15,7 @@ def get_last_articles():
 
 def generate_card(number, article):
     if article.main_image:
-        img_src = url_for("static", filename=article.main_image.file_path)
+        img_src = url_for_uploads(article.main_image.file_path)
     else:
         img_src = "https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/images/bg-4.png"
 
