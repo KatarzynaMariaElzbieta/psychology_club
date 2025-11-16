@@ -23,7 +23,6 @@ def create_app():
     app.config["SECURITY_PASSWORD_HASH"] = "bcrypt"
     app.config["SECURITY_URL_PREFIX"] = "/auth"
     app.config["SECURITY_REMEMBER_ME"] = True
-    app.config["UPLOAD_FOLDER"] = "/app/uploads"
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -34,6 +33,10 @@ def create_app():
     # 🔹 Konfiguracja Flask-Security
     user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
     security.init_app(app, user_datastore)
+
+    UPLOAD_FOLDER = os.path.join(os.getcwd(), "app/uploads")
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
     # Inicjalizacja Dash
     from app.dash_app import init_dash
@@ -50,6 +53,6 @@ def create_app():
 
     @app.route("/media/<path:filename>")
     def media(filename):
-        return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     return app
