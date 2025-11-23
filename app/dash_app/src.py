@@ -60,3 +60,7 @@ def prepare_html(content):
         css_sanitizer=css_sanitizer,
         strip=True
     )
+
+
+def url_for_uploads(filename):
+    return f"/media/{filename}"

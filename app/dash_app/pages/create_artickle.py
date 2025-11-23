@@ -11,6 +11,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import db
+from app.dash_app.src import url_for_uploads
 from app.models import Article, Image, Tag
 
 dash.register_page(__name__, path="/nowy_artykul", name="Nowy artykuł")
@@ -115,7 +116,7 @@ def save_article(n_clicks, title, short_content, content, tags, main_image, prev
     uploaded_urls = []
     for thumb in previews or []:
         img_src = thumb["props"]["children"][0]["props"]["src"]
-        # rel_path = img_src.replace(current_app.static_url_path + "/", "")
+        rel_path = img_src.replace("/media" + "/", "")
         img = Image(file_path=rel_path, is_main=(main_image in img_src))
         article.images.append(img)
         uploaded_urls.append(img_src)
@@ -157,8 +158,8 @@ def upload_image(contents, filename, current_preview, editor_content):
     with open(save_path, "wb") as f:
         f.write(img_bytes)
 
-    img_url = url_for("static", filename=f"uploads/{safe_name}")
-    new_content = (editor_content or "") + f'<p><img src="{img_url}" style="max-width:700px;"></p>'
+    img_url = url_for_uploads(safe_name)
+    new_content = (editor_content or "") + f'<p ><img src="{img_url}" style="max-width:700px;"></p>'
 
     # Miniatura + przycisk „ustaw jako główny”
     thumb = dmc.Paper(
