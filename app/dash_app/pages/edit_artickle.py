@@ -15,6 +15,7 @@ from app.dash_app.src import require_roles, url_for_uploads
 from app.models import Article, Image, Tag
 
 dash.register_page(__name__, path_template="/edytuj_artykul/<id>")
+
 layout = html.Div(
     [
         dmc.Container(
