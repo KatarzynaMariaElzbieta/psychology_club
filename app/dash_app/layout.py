@@ -1,7 +1,7 @@
 import dash
 import dash_mantine_components as dmc
-from dash import ALL, Input, Output, callback, callback_context, dcc, html
-from flask import current_app, url_for
+from dash import Input, Output, callback, dcc, html
+from flask import url_for
 from flask_login import current_user
 
 logo2_path = "/static/local/logo-wam.png"
@@ -113,7 +113,10 @@ def login_logout(_):
             html.A("Wyloguj", href="/auth/logout", className="mantine-Anchor-root"),
             [dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()],
             [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())]
-            + [dmc.MenuItem(html.A("Wyloguj", href="/auth/logout"))],
+            + [
+                dmc.MenuItem(html.A("Kontakt", href="/kontakt")),
+                dmc.MenuItem(html.A("Logowanie", href="/auth/login")),
+            ],
         )
     else:
         if "Dodaj artykuł" in menu_items.keys():
@@ -122,5 +125,8 @@ def login_logout(_):
             html.A("Logowanie", href="/auth/login", className="mantine-Anchor-root"),
             [dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()],
             [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())]
-            + [dmc.MenuItem(html.A("Logowanie", href="/auth/login"))],
+            + [
+                dmc.MenuItem(html.A("Kontakt", href="/kontakt")),
+                dmc.MenuItem(html.A("Logowanie", href="/auth/login")),
+            ],
         )

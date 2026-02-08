@@ -1,10 +1,8 @@
 import dash
 import dash_mantine_components as dmc
-from click import style
 from dash import html
 from dash_iconify import DashIconify
 
-from app.dash_app.pages.callendar import site_in_build
 
 dash.register_page(__name__, path="/kontakt/", name="Kontakt")  # rejestracja strony
 layout = dmc.Stack(
@@ -143,8 +141,10 @@ layout = dmc.Stack(
                             ),
                             dmc.Group(
                                 [
+                                    dmc.Avatar(src="/static/local/photos/buchta.png"),
                                     dmc.Box(
                                         [
+
                                             dmc.Title("Przewodniczący: Michał Buchta", order=6),
                                             dmc.Text("m.buchta@psychowam.pl"),
                                         ]
@@ -157,6 +157,7 @@ layout = dmc.Stack(
                             ),
                             dmc.Group(
                                 [
+                                    dmc.Avatar(src="/static/local/photos/rozmus.png"),
                                     dmc.Box(
                                         [
                                             dmc.Title("Zastępczyni: Aleksandra Rozmus", order=6),
@@ -171,6 +172,7 @@ layout = dmc.Stack(
                             ),
                             dmc.Group(
                                 [
+                                    dmc.Avatar(src="/static/local/photos/kopec.png"),
                                     dmc.Box(
                                         [
                                             dmc.Title("Sekretarz: Katarzyna Kopeć", order=6),
