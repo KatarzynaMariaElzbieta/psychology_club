@@ -45,11 +45,8 @@ layout = dmc.Stack(
                                 variant="solid",
                                 w="100%",
                             ),
-                            dmc.Text("Najlepszy sposób kontaktu w sprawach ogólnych, współprac i wydarzeń:"),
-                            dmc.CopyButton(
-                                "kontakt@psychowam.pl",
-                                variant="light",
-                            ),
+                            dmc.Text("Najlepszy sposób kontaktu w sprawach ogólnych, współprac i wydarzeń:", p=10),
+                            dmc.CopyButton("kontakt@psychowam.pl", variant="light", fullWidth="true"),
                         ],
                         radius="md",
                         p="lg",
