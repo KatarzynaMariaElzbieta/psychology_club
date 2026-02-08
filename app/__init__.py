@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask, redirect, send_from_directory
 from flask_security import SQLAlchemyUserDatastore
 
-from app.avatars import register_avatar_routes
+from app.dash_app.pages.avatars import register_avatar_routes
 from app.extensions import db, migrate, security
 
 
