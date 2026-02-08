@@ -319,14 +319,14 @@ files = [
 
 [[package]]
 name = "dash-mantine-components"
-version = "2.3.0"
+version = "2.5.1"
 description = "Plotly Dash Components based on Mantine"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "dash_mantine_components-2.3.0-py3-none-any.whl", hash = "sha256:5e4995877bce9ee856002364d0975f924601511887263a12fd5aaa7d9f444cd5"},
-    {file = "dash_mantine_components-2.3.0.tar.gz", hash = "sha256:7400b75b1ca4e8b1bc8d8d1e07e5312c82770104791f0b8d12a832565e9eb628"},
+    {file = "dash_mantine_components-2.5.1-py3-none-any.whl", hash = "sha256:f8f35d08ff08c7876606ced3023ef03ab59e2ca12dcb292312c4c601837f80d2"},
+    {file = "dash_mantine_components-2.5.1.tar.gz", hash = "sha256:8162c71e9eee7e02bf2d88456413c829faa95c1e648d40e4205591465723dca5"},
 ]
 
 [package.dependencies]
