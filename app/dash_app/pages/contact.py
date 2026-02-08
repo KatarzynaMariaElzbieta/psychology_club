@@ -3,7 +3,6 @@ import dash_mantine_components as dmc
 from dash import html
 from dash_iconify import DashIconify
 
-
 dash.register_page(__name__, path="/kontakt/", name="Kontakt")  # rejestracja strony
 layout = dmc.Stack(
     [
@@ -141,14 +140,13 @@ layout = dmc.Stack(
                             ),
                             dmc.Group(
                                 [
-                                    dmc.Avatar(src="/static/local/photos/buchta.png"),
+                                    dmc.Avatar(src="/avatars/buchta.png"),
                                     dmc.Box(
                                         [
-
                                             dmc.Title("Przewodniczący: Michał Buchta", order=6),
                                             dmc.Text("m.buchta@psychowam.pl"),
                                         ]
-                                    )
+                                    ),
                                 ]
                             ),
                             dmc.Divider(
@@ -157,13 +155,13 @@ layout = dmc.Stack(
                             ),
                             dmc.Group(
                                 [
-                                    dmc.Avatar(src="/static/local/photos/rozmus.png"),
+                                    dmc.Avatar(src=f"/avatars/rozmus.png"),
                                     dmc.Box(
                                         [
                                             dmc.Title("Zastępczyni: Aleksandra Rozmus", order=6),
                                             dmc.Text("a.rozmus@psychowam.pl"),
                                         ]
-                                    )
+                                    ),
                                 ]
                             ),
                             dmc.Divider(
@@ -172,13 +170,13 @@ layout = dmc.Stack(
                             ),
                             dmc.Group(
                                 [
-                                    dmc.Avatar(src="/static/local/photos/kopec.png"),
+                                    dmc.Avatar(src="/avatars/kopec.png"),
                                     dmc.Box(
                                         [
                                             dmc.Title("Sekretarz: Katarzyna Kopeć", order=6),
                                             dmc.Text("k.kopec@psychowam.pl"),
                                         ]
-                                    )
+                                    ),
                                 ]
                             ),
                         ],
