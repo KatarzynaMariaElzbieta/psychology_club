@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask, redirect, send_from_directory
 from flask_security import SQLAlchemyUserDatastore
 
+from app.dash_app.pages.avatars import register_avatar_routes
 from app.extensions import db, migrate, security
 
 
@@ -55,4 +56,5 @@ def create_app():
     def media(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
+    register_avatar_routes(app)
     return app
