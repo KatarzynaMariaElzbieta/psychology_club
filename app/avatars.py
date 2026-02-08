@@ -3,7 +3,7 @@ import os
 from flask import abort, send_from_directory
 
 # Lista awatarów, które chcesz udostępniać
-ALLOWED_AVATARS = {"buchta.png", "avatar_2.png", "avatar_3.png"}
+ALLOWED_AVATARS = {"buchta.png", "rozmus.png", "kopec.png"}
 
 
 def get_avatar_dir(app):
