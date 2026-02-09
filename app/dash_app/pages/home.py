@@ -70,7 +70,7 @@ def main_layout():
                                 orientation="horizontal",
                                 withControls=True,
                                 withIndicators=False,
-                                slideSize={"base": "100%", "sm": "40%", "md": "33.333333%"},
+                                slideSize={"base": "100%", "sm": "100%", "md": "33.333333%"},
                                 slideGap="xl",
                                 emblaOptions={"loop": True, "align": "start", "slidesToScroll": 1},
                                 controlSize=50,
