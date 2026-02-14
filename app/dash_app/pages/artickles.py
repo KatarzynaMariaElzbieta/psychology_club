@@ -51,7 +51,12 @@ layout = dmc.Stack(
             align="center",
             gap="xs",
         ),
-        dmc.TextInput(id="search-input", placeholder="Szukaj po artykułach...", debounce=True, style={"width": "100%"}),
+        dmc.TextInput(
+            id="search-input",
+            placeholder="Wyszukaj po tytule, treści, autorze, tagach.",
+            debounce=True,
+            style={"width": "100%"},
+        ),
         dmc.Box(id="artickles_containter"),
         dag.AgGrid(
             id="articles-grid",
@@ -155,13 +160,14 @@ def update_quick_filter(text):
 @callback(
     Output("articles-list", "children"),
     Output("articles-pagination", "total"),
+    Output("articles-pagination", "style"),
     Input("articles-grid", "virtualRowData"),
     Input("articles-pagination", "value"),
 )
 def render_articles(filtered_rows, page):
 
     if not filtered_rows:
-        return "Brak wyników", 1
+        return "Brak wyników", 1, {"display": "none"}
 
     per_page = 15
     total_items = len(filtered_rows)
@@ -176,7 +182,11 @@ def render_articles(filtered_rows, page):
 
     visible_articles = filtered_rows[start:end]
 
-    return ([article_card(article) for article in visible_articles], total_pages)
+    return (
+        [article_card(article) for article in visible_articles],
+        total_pages,
+        {"display": "none" if total_pages == 1 else "block"},
+    )
 
 
 @callback(Output("articles-pagination", "value"), Input("search-input", "value"), prevent_initial_call=True)
