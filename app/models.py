@@ -37,6 +37,8 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(255), nullable=False)
     active = db.Column(db.Boolean(), default=True)
     confirmed_at = db.Column(db.DateTime(), default=datetime.utcnow)
+    username = db.Column(db.String(100), unique=False, nullable=True)
+    phone = db.Column(db.String(20), nullable=True)
 
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
 

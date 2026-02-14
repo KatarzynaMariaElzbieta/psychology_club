@@ -51,3 +51,9 @@ min-height: calc(100vh - 130px);
 .mantine-Divider-root {
     margin: .5rem 0;
 }
+
+.author {
+    color: gray;
+    font-style: italic;
+    font-size: 12px
+}
