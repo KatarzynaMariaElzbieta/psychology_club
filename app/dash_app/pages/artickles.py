@@ -148,7 +148,7 @@ def article_card(article):
         shadow="md",
         withBorder=True,
         w="100%",
-        m="1rem",
+        mb="1rem",
     )
 
 
