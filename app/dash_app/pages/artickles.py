@@ -13,7 +13,7 @@ def article_to_dict(article: Article) -> dict:
     return {
         "id": article.id,
         "title": article.title,
-        "author": article.authors[0].email,
+        "author": article.authors[0].username,
         "summary": article.short_content,
         "content": article.content,
         "tags": [tag.name for tag in article.tags] if article.tags else [],
@@ -87,7 +87,7 @@ layout = dmc.Stack(
     justify="center",
     gap="md",
     m={
-        "base": "5% 25%",
+        "base": "5% 15%",
         "md": "3% 25%",
     },
     style={"min-height": "calc(100vh - 130px)"},
@@ -110,13 +110,18 @@ def article_card(article):
                         h=200,
                         fit="contain",
                     ),
-                    span=4,
+                    span={"base": 12, "md": 4},
                 ),
                 dmc.GridCol(
                     dmc.Stack(
                         [
-                            dmc.Title(article["title"], order=4),
-                            dmc.Text(article["author"]),
+                            dmc.Stack(
+                                [
+                                    dmc.Title(article["title"], order=4),
+                                    dmc.Text(["Autor: ", article["author"]], className="author"),
+                                ],
+                                gap="sx",
+                            ),
                             dmc.Text(
                                 [
                                     article["summary"],
@@ -127,7 +132,11 @@ def article_card(article):
                                     ),
                                 ]
                             ),
+                            dmc.Group([dmc.Badge(tag, size="xs", variant="light") for tag in article["tags"]]),
                         ],
+                        gap="xs",
+                        justify="space-around",
+                        h="100%",
                     ),
                     span=8,
                 ),
@@ -165,7 +174,6 @@ def update_quick_filter(text):
     Input("articles-pagination", "value"),
 )
 def render_articles(filtered_rows, page):
-
     if not filtered_rows:
         return "Brak wyników", 1, {"display": "none"}
 

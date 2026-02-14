@@ -37,7 +37,7 @@ def show_article(pathname):
                     dmc.Title(article.title, order=1, style={"marginBottom": "1rem", "padding-top": "1rem"})
                     , ta="center"),
                 dmc.Text(
-                    f"{'Autor' if len(article.authors) < 2 else 'Autorzy'}: {', '.join([author.email for author in article.authors])}",
+                    f"{'Autor' if len(article.authors) < 2 else 'Autorzy'}: {', '.join([author.username for author in article.authors])}",
                     size="sm", ta="center"),
                 html.Hr(),
                 dmc.Group([dmc.Badge(tag.name, variant="light") for tag in article.tags], justify="center", ),
