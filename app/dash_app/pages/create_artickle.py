@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 from app import db
 from app.dash_app.src import url_for_uploads
-from app.models import Article, Image, Tag
+from app.models import Article, Image, Tag, User
 
 dash.register_page(__name__, path="/nowy_artykul", name="Nowy artykuł")
 
@@ -24,8 +24,24 @@ def get_upload_folder():
 # @require_roles("editor", redirect_to="/no-access")
 @login_required
 def serve_layout():
+    users = User.query.order_by(User.username.asc().nullslast(), User.email.asc()).all()
+    author_options = [
+        {"value": str(user.id), "label": user.username or user.email}
+        for user in users
+    ]
+    current_user_id = str(current_user.id) if current_user.is_authenticated else None
     return dmc.Container(
         [
+            dmc.MultiSelect(
+                label="Autorzy",
+                placeholder="Wybierz autorów artykułu",
+                id="article-authors-input",
+                data=author_options,
+                value=[current_user_id] if current_user_id else [],
+                searchable=True,
+                clearable=True,
+                mb=20,
+            ),
             dmc.TextInput(
                 label="Tytuł artykułu",
                 placeholder="Wpisz tytuł",
@@ -90,17 +106,28 @@ layout = serve_layout
     State("article-short-input", "value"),
     State("article-editor", "html"),
     State("framework-tags-input", "value"),
+    State("article-authors-input", "value"),
     State("main-image-store", "data"),
     State("uploaded-images-preview", "children"),
     prevent_initial_call=True,
 )
-def save_article(n_clicks, title, short_content, content, tags, main_image, previews):
+def save_article(n_clicks, title, short_content, content, tags, authors, main_image, previews):
     if not title or not content:
         return "⚠️ Uzupełnij wszystkie pola!"
+    if not authors:
+        return "⚠️ Wybierz co najmniej jednego autora!"
 
     # --- Utwórz nowy artykuł ---
     article = Article(title=title.strip(), content=content, short_content=short_content)
-    article.authors.append(current_user)
+    author_ids = []
+    for author_id in authors:
+        try:
+            author_ids.append(int(author_id))
+        except (TypeError, ValueError):
+            continue
+    if not author_ids:
+        return "⚠️ Wybierz poprawnych autorów!"
+    article.authors = User.query.filter(User.id.in_(author_ids)).all()
 
     # --- Tagi ---
     tag_objects = []
