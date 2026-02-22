@@ -4,17 +4,6 @@ from dotenv import load_dotenv
 from flask import Flask, redirect, send_from_directory
 from flask_security import SQLAlchemyUserDatastore
 
-from app.cookie_texts import (
-    COOKIE_ACCEPT_LABEL,
-    COOKIE_BANNER_MESSAGE,
-    COOKIE_REJECT_LABEL,
-    COOKIE_SETTINGS_ICON,
-    COOKIE_SETTINGS_LABEL,
-    PRIVACY_POLICY_CONTENT,
-    PRIVACY_POLICY_ICON,
-    PRIVACY_POLICY_LABEL,
-    PRIVACY_POLICY_TITLE,
-)
 from app.dash_app.pages.avatars import register_avatar_routes
 from app.extensions import db, migrate, security
 
@@ -35,7 +24,6 @@ def create_app():
     app.config["SECURITY_PASSWORD_HASH"] = "bcrypt"
     app.config["SECURITY_URL_PREFIX"] = "/auth"
     app.config["SECURITY_REMEMBER_ME"] = True
-    app.config["GA4_MEASUREMENT_ID"] = os.getenv("GA4_MEASUREMENT_ID", "").strip()
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -69,20 +57,4 @@ def create_app():
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     register_avatar_routes(app)
-
-    @app.context_processor
-    def inject_ga4_measurement_id():
-        return {
-            "ga4_measurement_id": app.config.get("GA4_MEASUREMENT_ID", ""),
-            "cookie_banner_message": COOKIE_BANNER_MESSAGE,
-            "cookie_accept_label": COOKIE_ACCEPT_LABEL,
-            "cookie_reject_label": COOKIE_REJECT_LABEL,
-            "cookie_settings_label": COOKIE_SETTINGS_LABEL,
-            "cookie_settings_icon": COOKIE_SETTINGS_ICON,
-            "privacy_policy_label": PRIVACY_POLICY_LABEL,
-            "privacy_policy_icon": PRIVACY_POLICY_ICON,
-            "privacy_policy_title": PRIVACY_POLICY_TITLE,
-            "privacy_policy_content": PRIVACY_POLICY_CONTENT,
-        }
-
     return app
