@@ -1,5 +1,4 @@
 import dash_mantine_components as dmc
-from dash import Dash
 from dash_extensions.enrich import DashProxy
 
 from app.cookie_texts import (
