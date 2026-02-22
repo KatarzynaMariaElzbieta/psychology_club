@@ -5,10 +5,8 @@ from app.cookie_texts import (
     COOKIE_ACCEPT_LABEL,
     COOKIE_BANNER_MESSAGE,
     COOKIE_REJECT_LABEL,
-    COOKIE_SETTINGS_ICON,
     COOKIE_SETTINGS_LABEL,
     PRIVACY_POLICY_CONTENT,
-    PRIVACY_POLICY_ICON,
     PRIVACY_POLICY_LABEL,
     PRIVACY_POLICY_TITLE,
 )
@@ -67,6 +65,12 @@ def _build_ga4_snippet(measurement_id: str) -> str:
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         font-size: 1.2rem;
         line-height: 1;
+        overflow: hidden;
+      }}
+      .cookie-settings-btn__icon {{
+        font-size: 1.2rem;
+        line-height: 1;
+        pointer-events: none;
       }}
       .floating-policy-actions {{
         position: fixed;
@@ -301,8 +305,8 @@ def init_dash(flask_app):
       </div>
     </div>
     <div class="floating-policy-actions">
-      <button type="button" class="cookie-settings-btn" onclick="openCookieSettings()" aria-label="{COOKIE_SETTINGS_LABEL}" title="{COOKIE_SETTINGS_LABEL}">{COOKIE_SETTINGS_ICON}</button>
-      <button type="button" class="cookie-settings-btn" onclick="openPrivacyPolicyModal()" aria-label="{PRIVACY_POLICY_LABEL}" title="{PRIVACY_POLICY_LABEL}">{PRIVACY_POLICY_ICON}</button>
+      <button type="button" class="cookie-settings-btn" onclick="openCookieSettings()" aria-label="{COOKIE_SETTINGS_LABEL}" title="{COOKIE_SETTINGS_LABEL}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#127850;</span></button>
+      <button type="button" class="cookie-settings-btn" onclick="openPrivacyPolicyModal()" aria-label="{PRIVACY_POLICY_LABEL}" title="{PRIVACY_POLICY_LABEL}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#128274;</span></button>
     </div>
     <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()">
       <div class="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
