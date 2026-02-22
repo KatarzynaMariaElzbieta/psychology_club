@@ -33,7 +33,6 @@ def create_app():
     app.config["SECURITY_PASSWORD_HASH"] = "bcrypt"
     app.config["SECURITY_URL_PREFIX"] = "/auth"
     app.config["SECURITY_REMEMBER_ME"] = True
-    app.config["GA4_MEASUREMENT_ID"] = os.getenv("GA4_MEASUREMENT_ID", "").strip()
 
     db.init_app(app)
     migrate.init_app(app, db)
