@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Dodaj użytkownika{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+<div class="admin-page">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="admin-flash-list">
+        {% for category, message in messages %}
+          <li class="admin-flash-item">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Dodaj użytkownika</h2>
+      <a class="admin-link" href="{{ url_for('roles.list_users') }}">Wróć do użytkowników</a>
+    </div>
+
+    <div class="admin-card__body">
+      <form method="POST">
+        <div class="admin-field">
+          <label for="email">E-mail</label>
+          <input id="email" type="text" name="email" required>
+        </div>
+
+        <div class="admin-field">
+          <label for="password">Hasło</label>
+          <input id="password" type="password" name="password" required>
+          <small class="admin-muted">Minimum 8 znaków.</small>
+        </div>
+
+        <div class="admin-field">
+          <label for="username">Nazwa użytkownika</label>
+          <input id="username" type="text" name="username">
+        </div>
+
+        <div class="admin-field">
+          <label for="phone">Telefon</label>
+          <input id="phone" type="text" name="phone">
+        </div>
+
+        <div class="admin-field">
+          <label>
+            <input type="checkbox" name="active" checked>
+            Konto aktywne
+          </label>
+        </div>
+
+        <div class="admin-field">
+          <label>Role</label>
+          <div class="admin-checklist" style="max-height: 300px;">
+            {% for role in all_roles %}
+              <label class="admin-checkitem">
+                <input type="checkbox" name="roles" value="{{ role.id }}">
+                <span>{{ role.name }}{% if role.description %} — {{ role.description }}{% endif %}</span>
+              </label>
+            {% else %}
+              <p class="admin-muted">Brak ról. <a class="admin-link" href="{{ url_for('roles.create_role') }}">Dodaj rolę</a>.</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="admin-actions">
+          <button class="admin-btn" type="submit">Utwórz użytkownika</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -3,18 +3,47 @@
 {% block title %}Role – Panel administracyjny{% endblock %}
 
 {% block content %}
-<h1>Lista ról</h1>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 
-<p><a href="{{ url_for('roles.create_role') }}">➕ Dodaj nową rolę</a></p>
+<div class="admin-page">
+  <div class="admin-header">
+    <h1>Role</h1>
+    <p class="admin-subtitle">Zarządzaj uprawnieniami i przypisaniami ról.</p>
+  </div>
 
-<ul>
-  {% for r in roles %}
-    <li>
-      <strong>{{ r.name }}</strong> — {{ r.description or "Brak opisu" }}
-      &nbsp; | &nbsp;
-      <a href="{{ url_for('roles.assign_role', role_name=r.name) }}">Przypisz użytkowników</a>
-    </li>
-  {% endfor %}
-</ul>
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Lista ról</h2>
+      <div class="admin-actions">
+        <a class="admin-link" href="{{ url_for('admin_panel') }}">Wróć do panelu admina</a>
+        <a class="admin-btn" href="{{ url_for('roles.create_role') }}">+ Dodaj rolę</a>
+      </div>
+    </div>
 
+    <table class="admin-table">
+      <thead>
+      <tr>
+        <th>Rola</th>
+        <th>Opis</th>
+        <th>Akcje</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for r in roles %}
+        <tr>
+          <td><strong>{{ r.name }}</strong></td>
+          <td class="admin-muted">{{ r.description or "Brak opisu" }}</td>
+          <td>
+            <a class="admin-link" href="{{ url_for('roles.assign_role', role_name=r.name) }}">Przypisz użytkowników</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="3" class="admin-muted">Brak ról w systemie.</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}
