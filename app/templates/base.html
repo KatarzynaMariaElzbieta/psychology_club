@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>{% block title %}Koło Psychologii WAM{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  {% if ga4_measurement_id %}
   <style>
     .cookie-banner {
       position: fixed;
@@ -115,18 +114,25 @@
       margin: 0;
     }
   </style>
+  {% if ga4_measurement_id %}
   <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_measurement_id }}"></script>
+  {% endif %}
   <script>
+    var ga4MeasurementId = "{{ ga4_measurement_id }}";
+    var hasGa4 = ga4MeasurementId !== "";
+
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('consent', 'default', {
-      ad_storage: 'denied',
-      analytics_storage: 'denied',
-      ad_user_data: 'denied',
-      ad_personalization: 'denied'
-    });
-    gtag('config', '{{ ga4_measurement_id }}', { send_page_view: false });
+    if (hasGa4) {
+      gtag('js', new Date());
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        analytics_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied'
+      });
+      gtag('config', ga4MeasurementId, { send_page_view: false });
+    }
 
     function hasAnalyticsConsent() {
       return localStorage.getItem('ga4_consent') === 'granted';
@@ -134,17 +140,19 @@
 
     function updateConsent(granted) {
       var state = granted ? 'granted' : 'denied';
-      gtag('consent', 'update', {
-        ad_storage: 'denied',
-        analytics_storage: state,
-        ad_user_data: 'denied',
-        ad_personalization: 'denied'
-      });
+      if (hasGa4) {
+        gtag('consent', 'update', {
+          ad_storage: 'denied',
+          analytics_storage: state,
+          ad_user_data: 'denied',
+          ad_personalization: 'denied'
+        });
+      }
       localStorage.setItem('ga4_consent', state);
     }
 
     function trackEvent(eventName, params) {
-      if (!hasAnalyticsConsent()) return;
+      if (!hasGa4 || !hasAnalyticsConsent()) return;
       gtag('event', eventName, params || {});
     }
 
@@ -247,12 +255,10 @@
       });
     }, true);
   </script>
-  {% endif %}
 </head>
-<body>
+<body data-admin-ui-version="admin-ui-v3">
   {% block content %}{% endblock %}
-  {% if ga4_measurement_id %}
-  <div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite">
+  <div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite" style="display:none;">
     <div>{{ cookie_banner_message }}</div>
     <div class="cookie-banner__actions">
       <button type="button" data-action="accept" onclick="acceptAnalyticsCookies()">{{ cookie_accept_label }}</button>
@@ -263,7 +269,7 @@
     <button type="button" class="cookie-settings-btn" onclick="openCookieSettings()" aria-label="{{ cookie_settings_label }}" title="{{ cookie_settings_label }}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#127850;</span></button>
     <button type="button" class="cookie-settings-btn" onclick="openPrivacyPolicyModal()" aria-label="{{ privacy_policy_label }}" title="{{ privacy_policy_label }}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#128274;</span></button>
   </div>
-  <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()">
+  <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()" style="display:none;">
     <div class="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
       <div class="privacy-modal__header">
         <h3 id="privacy-modal-title" class="privacy-modal__title">{{ privacy_policy_title }}</h3>
@@ -272,6 +278,5 @@
       <p class="privacy-modal__content">{{ privacy_policy_content }}</p>
     </div>
   </div>
-  {% endif %}
 </body>
 </html>
