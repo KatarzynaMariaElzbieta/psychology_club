@@ -4,6 +4,9 @@ from dash import Output, Input, callback, html, dcc
 import dash_mantine_components as dmc
 from markupsafe import Markup
 from dash_extensions import Purify
+from dash_iconify import DashIconify
+
+from flask_security import current_user
 
 from ..src import prepare_html
 from ... import db
@@ -30,11 +33,33 @@ def show_article(pathname):
         return dmc.Text("Nie znaleziono artykułu", )
 
     safe_html = prepare_html(article.content)
+    can_edit = (
+        getattr(current_user, "is_authenticated", False)
+        and (current_user.has_role("admin") or current_user in article.authors)
+    )
+    title_children = [dmc.Title(article.title, order=1, style={"marginBottom": "1rem", "padding-top": "1rem"})]
+    if can_edit:
+        title_children.append(
+            dcc.Link(
+                dmc.Tooltip(
+                    dmc.ActionIcon(
+                        DashIconify(icon="uil:edit", width=18),
+                        size="lg",
+                        variant="subtle",
+                        color="teal",
+                        **{"aria-label": "Edytuj artykuł"},
+                    ),
+                    label="Edytuj artykuł",
+                ),
+                href=f"/edytuj_artykul/{article.id}",
+                style={"marginLeft": "0.5rem"},
+            )
+        )
     return dmc.Container(
         dmc.Paper(
             [
                 dmc.Text(
-                    dmc.Title(article.title, order=1, style={"marginBottom": "1rem", "padding-top": "1rem"})
+                    dmc.Group(title_children, justify="center", gap="xs", align="center")
                     , ta="center"),
                 dmc.Text(
                     f"{'Autor' if len(article.authors) < 2 else 'Autorzy'}: {', '.join([author.username for author in article.authors])}",

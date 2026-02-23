@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Użytkownicy – Panel administracyjny{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+<div class="admin-page">
+  <div class="admin-header">
+    <h1>Użytkownicy</h1>
+    <p class="admin-subtitle">Zarządzaj kontami, statusem i rolami użytkowników.</p>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Lista użytkowników</h2>
+      <div class="admin-actions">
+        <a class="admin-link" href="{{ url_for('admin_panel') }}">Wróć do panelu admina</a>
+        <a class="admin-btn" href="{{ url_for('roles.create_user') }}">+ Dodaj użytkownika</a>
+      </div>
+    </div>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Login</th>
+          <th>Status</th>
+          <th>Role</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          <tr>
+            <td>{{ user.email }}</td>
+            <td>{{ user.username or "-" }}</td>
+            <td>
+              {% if user.active %}
+                <span class="admin-chip">Aktywny</span>
+              {% else %}
+                <span class="admin-chip">Nieaktywny</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if user.roles %}
+                {% for role in user.roles %}
+                  <span class="admin-chip">{{ role.name }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="admin-muted">Brak</span>
+              {% endif %}
+            </td>
+            <td>
+              <a class="admin-link" href="{{ url_for('roles.edit_user', user_id=user.id) }}">Edytuj</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="5" class="admin-muted">Brak użytkowników.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

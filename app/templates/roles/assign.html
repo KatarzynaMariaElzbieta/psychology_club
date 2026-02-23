@@ -3,25 +3,50 @@
 {% block title %}Przypisz użytkowników{% endblock %}
 
 {% block content %}
-<h1>Przypisz użytkowników do roli: {{ role.name }}</h1>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 
-<form method="POST">
+<div class="admin-page">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="admin-flash-list">
+        {% for category, message in messages %}
+          <li class="admin-flash-item">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
 
-  {% for user in users %}
-    <div style="margin-bottom:6px;">
-      <input
-          type="checkbox"
-          name="users"
-          value="{{ user.id }}"
-          {% if role in user.roles %}checked{% endif %}
-      >
-      {{ user.email }}
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Przypisz użytkowników do roli: {{ role.name }}</h2>
+      <a class="admin-link" href="{{ url_for('roles.list_roles') }}">Wróć do ról</a>
     </div>
-  {% endfor %}
 
-  <button type="submit" style="margin-top:10px;">Zapisz</button>
-</form>
+    <div class="admin-card__body">
+      <p class="admin-subtitle">Zaznacz użytkowników, którzy mają mieć tę rolę.</p>
 
-<p><a href="{{ url_for('roles.list_roles') }}">⬅ Powrót</a></p>
+      <form method="POST">
+        <div class="admin-checklist">
+          {% for user in users %}
+            <label class="admin-checkitem">
+              <input
+                  type="checkbox"
+                  name="users"
+                  value="{{ user.id }}"
+                  {% if role in user.roles %}checked{% endif %}
+              >
+              <span>{{ user.email }}</span>
+            </label>
+          {% else %}
+            <p class="admin-muted">Brak użytkowników.</p>
+          {% endfor %}
+        </div>
 
+        <div class="admin-actions" style="margin-top: 1rem;">
+          <button class="admin-btn" type="submit">Zapisz</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

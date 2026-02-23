@@ -3,19 +3,42 @@
 {% block title %}Dodaj rolę{% endblock %}
 
 {% block content %}
-<h1>Utwórz rolę</h1>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 
-<form method="POST" style="max-width: 400px">
+<div class="admin-page">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="admin-flash-list">
+        {% for category, message in messages %}
+          <li class="admin-flash-item">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
 
-    <label>Nazwa roli</label><br>
-    <input type="text" name="name" required style="width:100%;"><br><br>
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Utwórz nową rolę</h2>
+      <a class="admin-link" href="{{ url_for('roles.list_roles') }}">Wróć do ról</a>
+    </div>
 
-    <label>Opis</label><br>
-    <textarea name="description" style="width:100%; height:80px;"></textarea><br><br>
+    <div class="admin-card__body">
+      <form method="POST">
+        <div class="admin-field">
+          <label for="name">Nazwa roli</label>
+          <input id="name" type="text" name="name" required>
+        </div>
 
-    <button type="submit">Zapisz</button>
-</form>
+        <div class="admin-field">
+          <label for="description">Opis</label>
+          <textarea id="description" name="description"></textarea>
+        </div>
 
-<p><a href="{{ url_for('roles.list_roles') }}">⬅ Powrót</a></p>
-
+        <div class="admin-actions">
+          <button class="admin-btn" type="submit">Zapisz</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

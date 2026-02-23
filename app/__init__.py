@@ -1,8 +1,8 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, redirect, send_from_directory
-from flask_security import SQLAlchemyUserDatastore
+from flask import Flask, redirect, render_template, send_from_directory
+from flask_security import SQLAlchemyUserDatastore, roles_accepted
 
 from app.cookie_texts import (
     COOKIE_ACCEPT_LABEL,
@@ -65,6 +65,11 @@ def create_app():
     @app.route("/media/<path:filename>")
     def media(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+    @app.route("/admin")
+    @roles_accepted("admin")
+    def admin_panel():
+        return render_template("admin/panel.html")
 
     register_avatar_routes(app)
 

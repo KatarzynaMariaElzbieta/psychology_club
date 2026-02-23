@@ -14,8 +14,12 @@ from .layout import layout
 
 
 def _build_ga4_snippet(measurement_id: str) -> str:
-    if not measurement_id:
-        return ""
+    ga_loader = (
+        f'<script async src="https://www.googletagmanager.com/gtag/js?id={measurement_id}"></script>'
+        if measurement_id
+        else ""
+    )
+    has_ga4_js = "true" if measurement_id else "false"
 
     return f"""
     <style>
@@ -128,18 +132,21 @@ def _build_ga4_snippet(measurement_id: str) -> str:
         margin: 0;
       }}
     </style>
-    <script async src="https://www.googletagmanager.com/gtag/js?id={measurement_id}"></script>
+    {ga_loader}
     <script>
+      const hasGa4 = {has_ga4_js};
       window.dataLayer = window.dataLayer || [];
       function gtag(){{dataLayer.push(arguments);}}
-      gtag('js', new Date());
-      gtag('consent', 'default', {{
-        ad_storage: 'denied',
-        analytics_storage: 'denied',
-        ad_user_data: 'denied',
-        ad_personalization: 'denied'
-      }});
-      gtag('config', '{measurement_id}', {{ send_page_view: false }});
+      if (hasGa4) {{
+        gtag('js', new Date());
+        gtag('consent', 'default', {{
+          ad_storage: 'denied',
+          analytics_storage: 'denied',
+          ad_user_data: 'denied',
+          ad_personalization: 'denied'
+        }});
+        gtag('config', '{measurement_id}', {{ send_page_view: false }});
+      }}
 
       function hasAnalyticsConsent() {{
         return localStorage.getItem('ga4_consent') === 'granted';
@@ -147,17 +154,19 @@ def _build_ga4_snippet(measurement_id: str) -> str:
 
       function updateConsent(granted) {{
         const state = granted ? 'granted' : 'denied';
-        gtag('consent', 'update', {{
-          ad_storage: 'denied',
-          analytics_storage: state,
-          ad_user_data: 'denied',
-          ad_personalization: 'denied'
-        }});
+        if (hasGa4) {{
+          gtag('consent', 'update', {{
+            ad_storage: 'denied',
+            analytics_storage: state,
+            ad_user_data: 'denied',
+            ad_personalization: 'denied'
+          }});
+        }}
         localStorage.setItem('ga4_consent', state);
       }}
 
       function trackEvent(eventName, params) {{
-        if (!hasAnalyticsConsent()) return;
+        if (!hasGa4 || !hasAnalyticsConsent()) return;
         gtag('event', eventName, params || {{}});
       }}
 
@@ -295,9 +304,9 @@ def init_dash(flask_app):
     {{%css%}}
     {_build_ga4_snippet(flask_app.config.get("GA4_MEASUREMENT_ID", ""))}
   </head>
-  <body>
+  <body data-admin-ui-version="admin-ui-v3">
     {{%app_entry%}}
-    <div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite">
+    <div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite" style="display:none;">
       <div>{COOKIE_BANNER_MESSAGE}</div>
       <div class="cookie-banner__actions">
         <button type="button" data-action="accept" onclick="acceptAnalyticsCookies()">{COOKIE_ACCEPT_LABEL}</button>
@@ -308,7 +317,7 @@ def init_dash(flask_app):
       <button type="button" class="cookie-settings-btn" onclick="openCookieSettings()" aria-label="{COOKIE_SETTINGS_LABEL}" title="{COOKIE_SETTINGS_LABEL}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#127850;</span></button>
       <button type="button" class="cookie-settings-btn" onclick="openPrivacyPolicyModal()" aria-label="{PRIVACY_POLICY_LABEL}" title="{PRIVACY_POLICY_LABEL}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#128274;</span></button>
     </div>
-    <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()">
+    <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()" style="display:none;">
       <div class="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
         <div class="privacy-modal__header">
           <h3 id="privacy-modal-title" class="privacy-modal__title">{PRIVACY_POLICY_TITLE}</h3>

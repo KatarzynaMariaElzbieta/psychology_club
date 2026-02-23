@@ -11,10 +11,11 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.dash_app.src import require_roles, url_for_uploads
+from app.dash_app.src import require_admin_or_author, url_for_uploads
 from app.models import Article, Image, Tag
 
 dash.register_page(__name__, path_template="/edytuj_artykul/<id>")
+
 
 layout = html.Div(
     [
@@ -63,10 +64,11 @@ layout = html.Div(
         )
     ],
     id="edit-article-content",
+    style={"display": "none"}
 )
 
 
-@require_roles("admin")
+@require_admin_or_author(raise_on_fail=True)
 def serve_edit_layout(article_id):
     article = Article.query.get_or_404(article_id)
 
@@ -122,6 +124,7 @@ def serve_edit_layout(article_id):
         previews,
         article.id,
         main_image,
+        {"display": "block"}
     )
 
 
@@ -133,6 +136,7 @@ def serve_edit_layout(article_id):
     Output("uploaded-images_", "children", allow_duplicate=True),
     Output("article-id-store", "data"),
     Output("main-image-store_edit", "data", allow_duplicate=True),
+    Output("edit-article-content", "style", allow_duplicate=True),
     Input("url", "pathname"),
     prevent_initial_call="initial_duplicate",
 )
@@ -159,6 +163,10 @@ def load_article_for_edit(pathname):
     State("uploaded-images_", "children"),
     State("article-id-store", "data"),
     # prevent_initial_call=True,
+)
+@require_admin_or_author(
+    article_id_getter=lambda n_clicks, title, short_content, content, tags, main_image, previews, article_id: article_id,
+    raise_on_fail=True,
 )
 def save_article_edit(n_clicks, title, short_content, content, tags, main_image, previews, article_id):
     if not title or not content:

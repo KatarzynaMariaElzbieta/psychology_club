@@ -1,0 +1,216 @@
+.admin-page {
+  max-width: 980px;
+  margin: 2rem auto;
+  padding: 0 1rem 2rem;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  color: #1f2937;
+}
+
+.admin-header {
+  margin-bottom: 1rem;
+}
+
+.admin-header h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.3rem;
+}
+
+.admin-subtitle {
+  margin: 0;
+  color: #6b7280;
+}
+
+.admin-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.08);
+}
+
+.admin-card + .admin-card {
+  margin-top: 1rem;
+}
+
+.admin-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.admin-card__head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.admin-card__body {
+  padding: 1.1rem 1.25rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.admin-tile {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.08);
+  padding: 1rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.12);
+}
+
+.admin-tile h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.admin-tile p {
+  margin: 0;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.admin-btn {
+  display: inline-block;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-btn:hover {
+  background: #1d4ed8;
+}
+
+.admin-link {
+  color: #1d4ed8;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.admin-link:hover {
+  text-decoration: underline;
+}
+
+.admin-muted {
+  color: #6b7280;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+}
+
+.admin-table th {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-weight: 600;
+  background: #fcfdff;
+}
+
+.admin-field {
+  margin-bottom: 0.9rem;
+}
+
+.admin-field label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.admin-field input[type="text"],
+.admin-field input[type="password"],
+.admin-field textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  box-sizing: border-box;
+  font: inherit;
+}
+
+.admin-field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.admin-checklist {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.5rem;
+  max-height: 420px;
+  overflow: auto;
+  background: #fcfdff;
+}
+
+.admin-checkitem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.55rem;
+  border-radius: 8px;
+}
+
+.admin-checkitem:hover {
+  background: #f1f5f9;
+}
+
+.admin-flash-list {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-flash-item {
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  margin-bottom: 0.5rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+  border: 1px solid #bfdbfe;
+}
+
+.admin-chip {
+  display: inline-block;
+  margin: 0.1rem 0.25rem 0.1rem 0;
+  background: #eef2ff;
+  color: #3730a3;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}

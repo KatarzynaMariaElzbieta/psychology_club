@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Panel administratora{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+<div class="admin-page">
+  <div class="admin-header">
+    <h1>Panel administratora</h1>
+    <p class="admin-subtitle">Wybierz obszar, którym chcesz zarządzać.</p>
+  </div>
+
+  <div class="admin-grid">
+    <a class="admin-tile" href="{{ url_for('roles.list_users') }}">
+      <h3>Użytkownicy</h3>
+      <p>Przeglądaj konta, edytuj role i status aktywności użytkowników.</p>
+    </a>
+
+    <a class="admin-tile" href="{{ url_for('roles.list_roles') }}">
+      <h3>Role</h3>
+      <p>Twórz role oraz przypisuj użytkowników do wybranych uprawnień.</p>
+    </a>
+  </div>
+</div>
+{% endblock %}
