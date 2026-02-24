@@ -63,7 +63,13 @@ def show_article(pathname):
                     , ta="center"),
                 dmc.Text(
                     f"{'Autor' if len(article.authors) < 2 else 'Autorzy'}: {', '.join([author.username for author in article.authors])}",
-                    size="sm", ta="center"),
+                    size="md", ta="center", fw=700),
+                dmc.Text(
+                    f"Data dodania: {article.created_at.strftime('%d.%m.%Y')}",
+                    size="xs", ta="center"),
+                dmc.Text(
+                    f"Data aktualizacji: {article.updated_at.strftime('%d.%m.%Y')}",
+                    size="xs", ta="center"),
                 html.Hr(),
                 dmc.Group([dmc.Badge(tag.name, variant="light") for tag in article.tags], justify="center", ),
                 html.Hr(),
@@ -72,7 +78,7 @@ def show_article(pathname):
                 ])
             ],
             radius="lg",
-            p="lg",
+            p="5rem",
             shadow="md",
             withBorder=True,
         ),
