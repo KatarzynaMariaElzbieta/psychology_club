@@ -83,5 +83,6 @@ def show_article(pathname):
             withBorder=True,
         ),
         size="md",
-        mt=20
+        mt=20,
+        mb=20,
     )

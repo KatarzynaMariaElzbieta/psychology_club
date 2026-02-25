@@ -136,7 +136,8 @@ def article_card(article):
                                         href=f"artykul/{article['id']}",
                                         style={"color": "Blue", "align": "right", "font-weight": "normal"},
                                     ),
-                                ]
+                                ],
+                                size="sm",
                             ),
                             dmc.Group([dmc.Badge(tag, size="xs", variant="light") for tag in article["tags"]]),
                         ],

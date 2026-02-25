@@ -23,7 +23,7 @@ def generate_card(number, article):
     return dmc.CarouselSlide(
         dmc.Card(
             [
-                dmc.CardSection(dmc.Text(number, size="xl", m=20, mb=10, className="card_number")),
+                # dmc.CardSection(dmc.Text(number, size="xl", m=20, mb=10, className="card_number")),
                 dmc.CardSection(
                     dmc.Image(
                         src=img_src,
@@ -33,7 +33,7 @@ def generate_card(number, article):
                 ),
                 dmc.CardSection(
                     [
-                        dmc.Title(article.title, order=4),
+                        dmc.Title(article.title, order=4, m=10),
                         dmc.Text(
                             [
                                 article.short_content,
@@ -42,7 +42,8 @@ def generate_card(number, article):
                                     href=f"artykul/{article.id}",
                                     style={"color": "Blue", "align": "right", "font-weight": "normal"},
                                 ),
-                            ]
+                            ],
+                            m=10,
                         ),
                     ],
                     p=10,
@@ -51,7 +52,7 @@ def generate_card(number, article):
             withBorder=True,
             shadow="sm",
             radius="md",
-            h=500,
+            h=600,
         )
     )
 
@@ -61,7 +62,7 @@ def main_layout():
         dmc.Box(
             dmc.Stack(
                 [
-                    dmc.Title("Aktualności", order=1, style={"margin-left": "9rem", "color": "#3b3b3c"}),
+                    dmc.Title("Aktualności", order=1, mt=10, style={"margin-left": "9rem", "color": "#3b3b3c"}),
                     dmc.Center(
                         [
                             dmc.Carousel(
@@ -85,8 +86,8 @@ def main_layout():
                 ],
                 justify="center",
                 align="stretch",
-                style={"min-height": "calc(100vh - 130px)", "padding-bottom": "5%"},
-                gap="xl",
+                style={"min-height": "calc(100vh - 130px)", },
+                gap="xs",
             ),
             m={"base": "5% 0", "md": "0 0"},
             style={"min-height": "calc(100vh - 130px)"},
