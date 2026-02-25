@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import dash
 import dash_ag_grid as dag
 import dash_mantine_components as dmc
@@ -118,7 +120,11 @@ def article_card(article):
                             dmc.Stack(
                                 [
                                     dmc.Title(article["title"], order=4),
-                                    dmc.Text(["Autor: ", article["author"]], className="author"),
+                                    dmc.Text([
+                                        "Autor: ",
+                                        article["author"], " | ",
+                                        datetime.fromisoformat(article["created_at"]).strftime("%d.%m.%Y")
+                                    ], className="author"),
                                 ],
                                 gap="sx",
                             ),
@@ -130,7 +136,8 @@ def article_card(article):
                                         href=f"artykul/{article['id']}",
                                         style={"color": "Blue", "align": "right", "font-weight": "normal"},
                                     ),
-                                ]
+                                ],
+                                size="sm",
                             ),
                             dmc.Group([dmc.Badge(tag, size="xs", variant="light") for tag in article["tags"]]),
                         ],

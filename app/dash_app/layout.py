@@ -79,7 +79,7 @@ layout = dmc.AppShell(
                             dmc.Image(
                                 src=logo_path, w=100, fit="contain", style={"border": "solid", "color": "#1f2e4f"}
                             ),
-                            position={"bottom": "-10", "right": "47%"},
+                            position={"bottom": "-10", "right": "calc(50vw - 50px)"},
                         ),
                         dmc.Anchor("Kontakt", href="/kontakt", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
                     ],
