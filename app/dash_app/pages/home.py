@@ -21,6 +21,7 @@ def generate_card(number, article):
         img_src = "https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/images/bg-4.png"
 
     return dmc.CarouselSlide(
+        dmc.Anchor(
         dmc.Card(
             [
                 # dmc.CardSection(dmc.Text(number, size="xl", m=20, mb=10, className="card_number")),
@@ -53,7 +54,9 @@ def generate_card(number, article):
             shadow="sm",
             radius="md",
             h=600,
-        )
+        ),
+    href = f"artykul/{article.id}",
+    )
     )
 
 
@@ -76,7 +79,7 @@ def main_layout():
                                 emblaOptions={"loop": True, "align": "start", "slidesToScroll": 1},
                                 controlSize=50,
                                 style={"margin": "1rem"},
-                                w=1200,
+                                w={"base": "60vw", "md": "1200px"},
                             )
                         ],
                         p=100,
@@ -86,7 +89,7 @@ def main_layout():
                 ],
                 justify="center",
                 align="stretch",
-                style={"min-height": "calc(100vh - 130px)", },
+                style={"min-height": "calc(100vh - 130px)" },
                 gap="xs",
             ),
             m={"base": "5% 0", "md": "0 0"},
