@@ -14,7 +14,6 @@ def return_logo_path(path):
 
 menu_items = {"Strona główna": "/", "Artykuły": "/artykuly", "Kalendarium": "/kalendarium", "Projekty": "/projekty"}
 
-# Jeden komponent dla przycisków
 
 dmc.Anchor(
     "Underline on hover",
