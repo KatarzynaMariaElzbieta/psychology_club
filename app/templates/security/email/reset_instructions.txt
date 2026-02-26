@@ -1,0 +1,5 @@
+Aby zresetować hasło do konta Koła Psychologii WAM, kliknij w poniższy link:
+
+{{ reset_link }}
+
+Jeśli to nie Ty wysłałeś/aś prośbę o reset hasła, zignoruj tę wiadomość.

@@ -1,5 +1,9 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+import os
+import uuid
+
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_security import SQLAlchemyUserDatastore, hash_password, roles_accepted
+from werkzeug.utils import secure_filename
 
 from app import models
 from app.extensions import db
@@ -159,3 +163,65 @@ def edit_user(user_id):
         return redirect(url_for("roles.edit_user", user_id=user.id))
 
     return render_template("roles/edit_user.html", user=user, all_roles=all_roles)
+
+
+@roles_bp.route("/downloads", methods=["GET", "POST"])
+@roles_accepted("admin")
+def downloads():
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        description = (request.form.get("description") or "").strip() or None
+        uploaded_file = request.files.get("file")
+
+        if not title:
+            flash("Tytuł pliku jest wymagany.", "danger")
+            return redirect(url_for("roles.downloads"))
+
+        if not uploaded_file or not uploaded_file.filename:
+            flash("Wybierz plik do dodania.", "danger")
+            return redirect(url_for("roles.downloads"))
+
+        original_name = secure_filename(uploaded_file.filename)
+        if not original_name:
+            flash("Nieprawidłowa nazwa pliku.", "danger")
+            return redirect(url_for("roles.downloads"))
+
+        _, ext = os.path.splitext(original_name)
+        stored_name = f"{uuid.uuid4().hex}{ext.lower()}"
+
+        upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "downloads")
+        os.makedirs(upload_dir, exist_ok=True)
+        uploaded_file.save(os.path.join(upload_dir, stored_name))
+
+        db.session.add(
+            models.DownloadFile(
+                title=title,
+                description=description,
+                stored_name=stored_name,
+                original_name=original_name,
+            )
+        )
+        db.session.commit()
+        flash("Plik został dodany do sekcji 'Do pobrania'.", "success")
+        return redirect(url_for("roles.downloads"))
+
+    files = models.DownloadFile.query.order_by(models.DownloadFile.created_at.desc()).all()
+    return render_template("roles/downloads.html", files=files)
+
+
+@roles_bp.route("/downloads/<int:file_id>/delete", methods=["POST"])
+@roles_accepted("admin")
+def delete_download(file_id):
+    file_obj = models.DownloadFile.query.get(file_id)
+    if not file_obj:
+        flash("Plik nie istnieje.", "danger")
+        return redirect(url_for("roles.downloads"))
+
+    file_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "downloads", file_obj.stored_name)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    db.session.delete(file_obj)
+    db.session.commit()
+    flash("Plik został usunięty.", "success")
+    return redirect(url_for("roles.downloads"))

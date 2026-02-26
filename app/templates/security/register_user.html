@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "security/_macros.html" import render_field_with_errors %}
+
+{% block title %}Rejestracja{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="header">
+            <h2>Zarejestruj się</h2>
+        </div>
+
+        <div class="card">
+            <p>Masz już konto? <a href="{{ url_for('security.login') }}">Zaloguj się</a></p>
+
+            <form action="{{ url_for('security.register') }}" method="POST" class="login-form">
+                {{ register_user_form.hidden_tag() }}
+
+                <div class="form-group">
+                    <label for="{{ register_user_form.email.id }}">E-mail</label>
+                    {{ register_user_form.email(class_="form-control") }}
+                    {% for error in register_user_form.email.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    {{ render_field_with_errors(register_user_form.username, class_="form-control") }}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ register_user_form.password.id }}">Hasło</label>
+                    {{ register_user_form.password(class_="form-control") }}
+                    {% for error in register_user_form.password.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ register_user_form.password_confirm.id }}">Powtórz hasło</label>
+                    {{ register_user_form.password_confirm(class_="form-control") }}
+                    {% for error in register_user_form.password_confirm.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    {{ render_field_with_errors(register_user_form.phone, class_="form-control") }}
+                </div>
+
+                <div class="form-check">
+                    {{ register_user_form.statute_accepted(class_="form-check-input") }}
+                    <label for="{{ register_user_form.statute_accepted.id }}">
+                        {{ register_user_form.statute_accepted.label.text }}
+                        (<a href="{{ url_for('static', filename='local/Kolo_statut.pdf') }}"
+                            target="_blank" rel="noopener">pobierz PDF</a>)
+                    </label>
+                </div>
+                {% for error in register_user_form.statute_accepted.errors %}
+                    <small class="field-error">{{ error }}</small>
+                {% endfor %}
+
+                <div class="form-check">
+                    {{ register_user_form.wants_active_membership(class_="form-check-input") }}
+                    <label for="{{ register_user_form.wants_active_membership.id }}">
+                        {{ register_user_form.wants_active_membership.label.text }}
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    {{ register_user_form.wants_email_notifications(class_="form-check-input") }}
+                    <label for="{{ register_user_form.wants_email_notifications.id }}">
+                        {{ register_user_form.wants_email_notifications.label.text }}
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    {{ register_user_form.image_consent(class_="form-check-input") }}
+                    <label for="{{ register_user_form.image_consent.id }}">
+                        {{ register_user_form.image_consent.label.text }}
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Załóż konto</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

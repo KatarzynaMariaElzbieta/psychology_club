@@ -12,7 +12,13 @@ def return_logo_path(path):
     return url_for("dash_app", filename=path)
 
 
-menu_items = {"Strona główna": "/", "Artykuły": "/artykuly", "Kalendarium": "/kalendarium", "Projekty": "/projekty"}
+menu_items = {
+    "Strona główna": "/",
+    "Artykuły": "/artykuly",
+    "Kalendarium": "/kalendarium",
+    "Projekty": "/projekty",
+    "Do pobrania": "/do-pobrania",
+}
 
 
 dmc.Anchor(
@@ -105,25 +111,32 @@ layout = dmc.AppShell(
     Input("url", "pathname"),
 )
 def login_logout(_):
+    current_menu_items = dict(menu_items)
+
     if current_user and current_user.is_authenticated:
-        if current_user.has_role("admin"):
-            menu_items["Dodaj artykuł"] = "/nowy_artykul"
+        if current_user.has_role("autor"):
+            current_menu_items["Dodaj artykuł"] = "/nowy_artykul"
         return (
-            html.A("Wyloguj", href="/auth/logout", className="mantine-Anchor-root"),
-            [dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()],
-            [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())]
+            dmc.Group(
+                [
+                    dmc.Anchor("Moje konto", href="/moje-konto"),
+                    html.A("Wyloguj", href="/auth/logout", className="mantine-Anchor-root"),
+                ],
+                gap="sm",
+            ),
+            [dmc.Anchor(k, href=v, visibleFrom="md") for k, v in current_menu_items.items()],
+            [dmc.MenuItem(k, href=v) for k, v in list(current_menu_items.items())]
             + [
                 dmc.MenuItem(html.A("Kontakt", href="/kontakt")),
-                dmc.MenuItem(html.A("Logowanie", href="/auth/login")),
+                dmc.MenuItem(html.A("Moje konto", href="/moje-konto")),
+                dmc.MenuItem(html.A("Wyloguj", href="/auth/logout")),
             ],
         )
     else:
-        if "Dodaj artykuł" in menu_items.keys():
-            menu_items.pop("Dodaj artykuł")
         return (
             html.A("Logowanie", href="/auth/login", className="mantine-Anchor-root"),
-            [dmc.Anchor(k, href=v, visibleFrom="md") for k, v in menu_items.items()],
-            [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())]
+            [dmc.Anchor(k, href=v, visibleFrom="md") for k, v in current_menu_items.items()],
+            [dmc.MenuItem(k, href=v) for k, v in list(current_menu_items.items())]
             + [
                 dmc.MenuItem(html.A("Kontakt", href="/kontakt")),
                 dmc.MenuItem(html.A("Logowanie", href="/auth/login")),

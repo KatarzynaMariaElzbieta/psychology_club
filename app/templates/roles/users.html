@@ -27,6 +27,7 @@
           <th>Login</th>
           <th>Status</th>
           <th>Role</th>
+          <th>Deklaracje</th>
           <th>Akcje</th>
         </tr>
       </thead>
@@ -52,12 +53,32 @@
               {% endif %}
             </td>
             <td>
+              <div class="admin-declarations">
+                <span class="admin-decl-item">
+                  Statut:
+                  <strong>{{ "tak" if user.statute_accepted else "nie" }}</strong>
+                </span>
+                <span class="admin-decl-item">
+                  Aktywny członek:
+                  <strong>{{ "tak" if user.wants_active_membership else "nie" }}</strong>
+                </span>
+                <span class="admin-decl-item">
+                  Powiadomienia e-mail:
+                  <strong>{{ "tak" if user.wants_email_notifications else "nie" }}</strong>
+                </span>
+                <span class="admin-decl-item">
+                  Zgoda na wizerunek:
+                  <strong>{{ "tak" if user.image_consent else "nie" }}</strong>
+                </span>
+              </div>
+            </td>
+            <td>
               <a class="admin-link" href="{{ url_for('roles.edit_user', user_id=user.id) }}">Edytuj</a>
             </td>
           </tr>
         {% else %}
           <tr>
-            <td colspan="5" class="admin-muted">Brak użytkowników.</td>
+            <td colspan="6" class="admin-muted">Brak użytkowników.</td>
           </tr>
         {% endfor %}
       </tbody>
