@@ -17,7 +17,11 @@
                 {{ register_user_form.hidden_tag() }}
 
                 <div class="form-group">
-                    {{ render_field_with_errors(register_user_form.email, class_="form-control") }}
+                    <label for="{{ register_user_form.email.id }}">E-mail</label>
+                    {{ register_user_form.email(class_="form-control") }}
+                    {% for error in register_user_form.email.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
                 </div>
 
                 <div class="form-group">
@@ -25,11 +29,19 @@
                 </div>
 
                 <div class="form-group">
-                    {{ render_field_with_errors(register_user_form.password, class_="form-control") }}
+                    <label for="{{ register_user_form.password.id }}">Hasło</label>
+                    {{ register_user_form.password(class_="form-control") }}
+                    {% for error in register_user_form.password.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
                 </div>
 
                 <div class="form-group">
-                    {{ render_field_with_errors(register_user_form.password_confirm, class_="form-control") }}
+                    <label for="{{ register_user_form.password_confirm.id }}">Powtórz hasło</label>
+                    {{ register_user_form.password_confirm(class_="form-control") }}
+                    {% for error in register_user_form.password_confirm.errors %}
+                        <small class="field-error">{{ error }}</small>
+                    {% endfor %}
                 </div>
 
                 <div class="form-group">
