@@ -15,6 +15,7 @@ from app.cookie_texts import (
 )
 from app.dash_app.pages.avatars import register_avatar_routes
 from app.extensions import db, migrate, security
+from app.security_forms import ClubRegisterForm
 
 
 def create_app():
@@ -26,9 +27,10 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["SECURITY_REGISTERABLE"] = False
+    app.config["SECURITY_REGISTERABLE"] = True
     app.config["SECURITY_SEND_REGISTER_EMAIL"] = False
     app.config["SECURITY_CONFIRMABLE"] = False
+    app.config["SECURITY_REGISTER_FORM"] = ClubRegisterForm
     app.config["SECURITY_PASSWORD_SALT"] = os.getenv("SECURITY_PASSWORD_SALT")
     app.config["SECURITY_PASSWORD_HASH"] = "bcrypt"
     app.config["SECURITY_URL_PREFIX"] = "/auth"

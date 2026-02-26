@@ -214,3 +214,14 @@
   font-size: 0.8rem;
   font-weight: 600;
 }
+
+.admin-declarations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.admin-decl-item {
+  font-size: 0.86rem;
+  color: #374151;
+}

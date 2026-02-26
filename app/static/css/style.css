@@ -64,9 +64,17 @@ h2 {
 .form-check {
     display: flex;
     padding-bottom: 1rem;
-    justify-content: center;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 0.5rem;
 }
 
 input {
     margin-top: 0.3rem;
+}
+
+.field-error {
+  color: #b00020;
+  display: block;
+  margin: -0.6rem 0 0.8rem;
 }

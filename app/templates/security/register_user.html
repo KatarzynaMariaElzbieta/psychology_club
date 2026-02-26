@@ -39,8 +39,8 @@
                 <div class="form-check">
                     {{ register_user_form.statute_accepted(class_="form-check-input") }}
                     <label for="{{ register_user_form.statute_accepted.id }}">
-                        Zapoznałem/am się i akceptuję
-                        <a href="{{ url_for('static', filename='local/Deklaracja_Czlonkowska.pdf') }}" target="_blank" rel="noopener">statut koła (PDF)</a>
+                        {{ register_user_form.statute_accepted.label.text }}
+                        (<a href="{{ url_for('static', filename='local/Deklaracja_Czlonkowska.pdf') }}" target="_blank" rel="noopener">pobierz PDF</a>)
                     </label>
                 </div>
                 {% for error in register_user_form.statute_accepted.errors %}
@@ -50,14 +50,21 @@
                 <div class="form-check">
                     {{ register_user_form.wants_active_membership(class_="form-check-input") }}
                     <label for="{{ register_user_form.wants_active_membership.id }}">
-                        Wyrażam chęć dołączenia do koła jako jego aktywny członek.
+                        {{ register_user_form.wants_active_membership.label.text }}
                     </label>
                 </div>
 
                 <div class="form-check">
                     {{ register_user_form.wants_email_notifications(class_="form-check-input") }}
                     <label for="{{ register_user_form.wants_email_notifications.id }}">
-                        Chcę być informowany mailowo o planowanych wydarzeniach
+                        {{ register_user_form.wants_email_notifications.label.text }}
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    {{ register_user_form.image_consent(class_="form-check-input") }}
+                    <label for="{{ register_user_form.image_consent.id }}">
+                        {{ register_user_form.image_consent.label.text }}
                     </label>
                 </div>
 
