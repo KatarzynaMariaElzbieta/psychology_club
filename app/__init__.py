@@ -14,8 +14,25 @@ from app.cookie_texts import (
     PRIVACY_POLICY_TITLE,
 )
 from app.dash_app.pages.avatars import register_avatar_routes
-from app.extensions import db, migrate, security
+from app.extensions import db, mail, migrate, security
 from app.security_forms import ClubRegisterForm
+
+
+def _env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name, default):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def create_app():
@@ -31,14 +48,50 @@ def create_app():
     app.config["SECURITY_SEND_REGISTER_EMAIL"] = False
     app.config["SECURITY_CONFIRMABLE"] = False
     app.config["SECURITY_REGISTER_FORM"] = ClubRegisterForm
+    app.config["SECURITY_RECOVERABLE"] = _env_bool("SECURITY_RECOVERABLE", True)
+    app.config["SECURITY_EMAIL_SENDER"] = os.getenv("SECURITY_EMAIL_SENDER") or os.getenv("MAIL_DEFAULT_SENDER")
+    app.config["SECURITY_FORGOT_PASSWORD_WITHIN"] = os.getenv("SECURITY_FORGOT_PASSWORD_WITHIN", "2 days")
+    app.config["SECURITY_EMAIL_SUBJECT_PASSWORD_RESET"] = os.getenv(
+        "SECURITY_EMAIL_SUBJECT_PASSWORD_RESET",
+        "Instrukcja resetu hasła",
+    )
+    app.config["SECURITY_EMAIL_SUBJECT_PASSWORD_NOTICE"] = os.getenv(
+        "SECURITY_EMAIL_SUBJECT_PASSWORD_NOTICE",
+        "Hasło zostało zresetowane",
+    )
+    app.config["SECURITY_MSG_PASSWORD_RESET_REQUEST"] = (
+        "Jeśli konto istnieje, wysłaliśmy e-mail z linkiem do resetu hasła. "
+        "Sprawdź również folder SPAM.",
+        "info",
+    )
     app.config["SECURITY_PASSWORD_SALT"] = os.getenv("SECURITY_PASSWORD_SALT")
     app.config["SECURITY_PASSWORD_HASH"] = "bcrypt"
     app.config["SECURITY_URL_PREFIX"] = "/auth"
     app.config["SECURITY_REMEMBER_ME"] = True
+
+    # SMTP / e-mail
+    app.config["MAIL_SERVER"] = os.getenv("MAIL_SERVER", "")
+    app.config["MAIL_PORT"] = _env_int("MAIL_PORT", 587)
+    app.config["MAIL_USE_TLS"] = _env_bool("MAIL_USE_TLS", True)
+    app.config["MAIL_USE_SSL"] = _env_bool("MAIL_USE_SSL", False)
+    app.config["MAIL_USERNAME"] = os.getenv("MAIL_USERNAME", "")
+    app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD", "")
+    app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER", "")
+    app.config["MAIL_TIMEOUT"] = _env_int("MAIL_TIMEOUT", 10)
+
+    # Publiczny host do linków absolutnych (np. reset hasła) ustawiaj świadomie.
+    # Lokalnie lepiej bazować na aktualnym hoście żądania, bez wymuszania SERVER_NAME.
+    if _env_bool("USE_SERVER_NAME", False):
+        server_name = os.getenv("SERVER_NAME", "").strip()
+        if server_name:
+            app.config["SERVER_NAME"] = server_name
+    app.config["PREFERRED_URL_SCHEME"] = os.getenv("PREFERRED_URL_SCHEME", "https")
+
     app.config["GA4_MEASUREMENT_ID"] = os.getenv("GA4_MEASUREMENT_ID", "").strip()
 
     db.init_app(app)
     migrate.init_app(app, db)
+    mail.init_app(app)
 
     # Import modeli
     from app import models  # noqa
