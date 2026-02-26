@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Do pobrania – Panel administracyjny{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+<div class="admin-page">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="admin-flash-list">
+        {% for category, message in messages %}
+          <li class="admin-flash-item">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-header">
+    <h1>Do pobrania</h1>
+    <p class="admin-subtitle">Dodawaj pliki, które będą widoczne na stronie „Do pobrania”.</p>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Dodaj plik</h2>
+      <a class="admin-link" href="{{ url_for('admin_panel') }}">Wróć do panelu admina</a>
+    </div>
+    <div class="admin-card__body">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="admin-field">
+          <label for="title">Tytuł</label>
+          <input id="title" type="text" name="title" required>
+        </div>
+
+        <div class="admin-field">
+          <label for="description">Opis (opcjonalnie)</label>
+          <textarea id="description" name="description"></textarea>
+        </div>
+
+        <div class="admin-field">
+          <label for="file">Plik</label>
+          <input id="file" type="file" name="file" required>
+        </div>
+
+        <div class="admin-actions">
+          <button class="admin-btn" type="submit">Dodaj plik</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Aktualne pliki</h2>
+    </div>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Tytuł</th>
+          <th>Plik</th>
+          <th>Opis</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for file in files %}
+          <tr>
+            <td><strong>{{ file.title }}</strong></td>
+            <td>
+              <a class="admin-link" href="{{ url_for('download_file', file_id=file.id) }}" target="_blank" rel="noopener">
+                {{ file.original_name }}
+              </a>
+            </td>
+            <td class="admin-muted">{{ file.description or "—" }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('roles.delete_download', file_id=file.id) }}" onsubmit="return confirm('Usunąć ten plik?');">
+                <button type="submit" class="admin-link" style="border:0;background:none;padding:0;cursor:pointer;">Usuń</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="4" class="admin-muted">Brak plików do pobrania.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

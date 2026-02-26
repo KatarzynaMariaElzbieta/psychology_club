@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, redirect, render_template, send_from_directory
+from flask import Flask, abort, redirect, render_template, send_from_directory
 from flask_security import SQLAlchemyUserDatastore, roles_accepted
 
 from app.cookie_texts import (
@@ -102,6 +102,7 @@ def create_app():
 
     UPLOAD_FOLDER = os.path.join(os.getcwd(), "app/uploads")
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(os.path.join(UPLOAD_FOLDER, "downloads"), exist_ok=True)
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
     # Inicjalizacja Dash
@@ -120,6 +121,19 @@ def create_app():
     @app.route("/media/<path:filename>")
     def media(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+    @app.route("/pobierz/<int:file_id>")
+    def download_file(file_id):
+        file_obj = models.DownloadFile.query.get(file_id)
+        if not file_obj:
+            abort(404)
+
+        return send_from_directory(
+            os.path.join(app.config["UPLOAD_FOLDER"], "downloads"),
+            file_obj.stored_name,
+            as_attachment=True,
+            download_name=file_obj.original_name,
+        )
 
     @app.route("/admin")
     @roles_accepted("admin")

@@ -12,7 +12,13 @@ def return_logo_path(path):
     return url_for("dash_app", filename=path)
 
 
-menu_items = {"Strona główna": "/", "Artykuły": "/artykuly", "Kalendarium": "/kalendarium", "Projekty": "/projekty"}
+menu_items = {
+    "Strona główna": "/",
+    "Artykuły": "/artykuly",
+    "Kalendarium": "/kalendarium",
+    "Projekty": "/projekty",
+    "Do pobrania": "/do-pobrania",
+}
 
 
 dmc.Anchor(

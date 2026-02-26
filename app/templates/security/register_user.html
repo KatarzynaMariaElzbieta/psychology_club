@@ -52,7 +52,8 @@
                     {{ register_user_form.statute_accepted(class_="form-check-input") }}
                     <label for="{{ register_user_form.statute_accepted.id }}">
                         {{ register_user_form.statute_accepted.label.text }}
-                        (<a href="{{ url_for('static', filename='local/Deklaracja_Czlonkowska.pdf') }}" target="_blank" rel="noopener">pobierz PDF</a>)
+                        (<a href="{{ url_for('static', filename='local/Kolo_statut.pdf') }}"
+                            target="_blank" rel="noopener">pobierz PDF</a>)
                     </label>
                 </div>
                 {% for error in register_user_form.statute_accepted.errors %}
