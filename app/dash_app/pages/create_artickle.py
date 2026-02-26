@@ -11,7 +11,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.dash_app.src import url_for_uploads
+from app.dash_app.src import url_for_uploads, require_roles
 from app.models import Article, Image, Tag, User
 
 dash.register_page(__name__, path="/nowy_artykul", name="Nowy artykuł")
@@ -22,7 +22,7 @@ def get_upload_folder():
 
 
 # @require_roles("editor", redirect_to="/no-access")
-@login_required
+@require_roles("autor")
 def serve_layout():
     users = User.query.order_by(User.username.asc().nullslast(), User.email.asc()).all()
     author_options = [

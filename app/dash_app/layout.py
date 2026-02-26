@@ -106,7 +106,7 @@ layout = dmc.AppShell(
 )
 def login_logout(_):
     if current_user and current_user.is_authenticated:
-        if current_user.has_role("admin"):
+        if current_user.has_role("autor"):
             menu_items["Dodaj artykuł"] = "/nowy_artykul"
         return (
             html.A("Wyloguj", href="/auth/logout", className="mantine-Anchor-root"),
@@ -114,7 +114,7 @@ def login_logout(_):
             [dmc.MenuItem(k, href=v) for k, v in list(menu_items.items())]
             + [
                 dmc.MenuItem(html.A("Kontakt", href="/kontakt")),
-                dmc.MenuItem(html.A("Logowanie", href="/auth/login")),
+                dmc.MenuItem(html.A("Wyloguj", href="/auth/logout")),
             ],
         )
     else:
