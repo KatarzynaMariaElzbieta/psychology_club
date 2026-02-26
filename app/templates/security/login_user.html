@@ -11,9 +11,9 @@
         </div>
 
         <div class="card">
-            <!--    {% if security.registerable %}-->
-            <!--      <p>Nie masz konta? <a href="{{ url_for('security.register') }}">Zarejestruj się</a></p>-->
-            <!--    {% endif %}-->
+            {% if security.registerable %}
+              <p>Nie masz konta? <a href="{{ url_for('security.register') }}">Zarejestruj się</a></p>
+            {% endif %}
 
             <form action="{{ url_for('security.login') }}" method="POST" class="login-form">
                 {{ login_user_form.hidden_tag() }}

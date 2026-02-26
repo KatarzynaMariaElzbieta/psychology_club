@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "security/_macros.html" import render_field_with_errors %}
+
+{% block title %}Rejestracja{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="header">
+            <h2>Zarejestruj się</h2>
+        </div>
+
+        <div class="card">
+            <p>Masz już konto? <a href="{{ url_for('security.login') }}">Zaloguj się</a></p>
+
+            <form action="{{ url_for('security.register') }}" method="POST" class="login-form">
+                {{ register_user_form.hidden_tag() }}
+
+                <div class="form-group">
+                    {{ render_field_with_errors(register_user_form.email, class_="form-control") }}
+                </div>
+
+                <div class="form-group">
+                    {{ render_field_with_errors(register_user_form.username, class_="form-control") }}
+                </div>
+
+                <div class="form-group">
+                    {{ render_field_with_errors(register_user_form.password, class_="form-control") }}
+                </div>
+
+                <div class="form-group">
+                    {{ render_field_with_errors(register_user_form.password_confirm, class_="form-control") }}
+                </div>
+
+                <div class="form-group">
+                    {{ render_field_with_errors(register_user_form.phone, class_="form-control") }}
+                </div>
+
+                <div class="form-check">
+                    {{ register_user_form.statute_accepted(class_="form-check-input") }}
+                    <label for="{{ register_user_form.statute_accepted.id }}">
+                        Zapoznałem/am się i akceptuję
+                        <a href="{{ url_for('static', filename='local/Deklaracja_Czlonkowska.pdf') }}" target="_blank" rel="noopener">statut koła (PDF)</a>
+                    </label>
+                </div>
+                {% for error in register_user_form.statute_accepted.errors %}
+                    <small class="field-error">{{ error }}</small>
+                {% endfor %}
+
+                <div class="form-check">
+                    {{ register_user_form.wants_active_membership(class_="form-check-input") }}
+                    <label for="{{ register_user_form.wants_active_membership.id }}">
+                        Wyrażam chęć dołączenia do koła jako jego aktywny członek.
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    {{ register_user_form.wants_email_notifications(class_="form-check-input") }}
+                    <label for="{{ register_user_form.wants_email_notifications.id }}">
+                        Chcę być informowany mailowo o planowanych wydarzeniach
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Załóż konto</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

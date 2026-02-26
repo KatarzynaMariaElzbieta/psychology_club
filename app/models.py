@@ -39,6 +39,10 @@ class User(db.Model, UserMixin):
     confirmed_at = db.Column(db.DateTime(), default=datetime.utcnow)
     username = db.Column(db.String(100), unique=False, nullable=True)
     phone = db.Column(db.String(20), nullable=True)
+    statute_accepted = db.Column(db.Boolean(), nullable=False, default=False)
+    wants_active_membership = db.Column(db.Boolean(), nullable=False, default=False)
+    wants_email_notifications = db.Column(db.Boolean(), nullable=False, default=False)
+    image_consent = db.Column(db.Boolean(), nullable=False, default=False)
 
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
 
