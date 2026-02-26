@@ -255,7 +255,7 @@ def _build_ga4_snippet(measurement_id: str) -> str:
         const href = link.getAttribute('href') || '';
         const host = window.location.hostname;
         const isExternal = link.hostname && link.hostname !== host;
-        const isDownload = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip)$/i.test(href);
+        const isDownload = /\\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip)$/i.test(href);
 
         if (isDownload) {{
           trackEvent('file_download', {{

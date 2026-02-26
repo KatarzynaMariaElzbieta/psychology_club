@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_security import Security
+from app.mailersend_mail_util import MailerSendMailUtil
 
 try:
     from flask_mailman import Mail
@@ -12,4 +13,4 @@ except ModuleNotFoundError:  # pragma: no cover - fallback before dependency ins
 db = SQLAlchemy()
 migrate = Migrate()
 mail = Mail()
-security = Security()
+security = Security(mail_util_cls=MailerSendMailUtil)
