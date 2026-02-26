@@ -78,6 +78,8 @@ def create_app():
     app.config["MAIL_PASSWORD"] = os.getenv("MAIL_PASSWORD", "")
     app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER", "")
     app.config["MAIL_TIMEOUT"] = _env_int("MAIL_TIMEOUT", 10)
+    app.config["MAILERSEND_API_TOKEN"] = os.getenv("MAILERSEND_API_TOKEN", "")
+    app.config["MAILERSEND_API_URL"] = os.getenv("MAILERSEND_API_URL", "https://api.mailersend.com/v1/email")
 
     # Publiczny host do linków absolutnych (np. reset hasła) ustawiaj świadomie.
     # Lokalnie lepiej bazować na aktualnym hoście żądania, bez wymuszania SERVER_NAME.
