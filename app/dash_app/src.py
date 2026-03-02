@@ -1,6 +1,8 @@
 import bleach
 from bleach.css_sanitizer import CSSSanitizer
 import dash_mantine_components as dmc
+import re
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from flask import has_request_context
 from flask_security import current_user
@@ -125,3 +127,22 @@ def prepare_html(content):
 
 def url_for_uploads(filename):
     return f"/media/{filename}"
+
+
+def normalize_google_form_embed(raw_value):
+    if not raw_value:
+        return None
+
+    value = raw_value.strip()
+    iframe_src = re.search(r"""src\s*=\s*['"]([^'"]+)['"]""", value, flags=re.IGNORECASE)
+    url = iframe_src.group(1).strip() if iframe_src else value
+
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc != "docs.google.com":
+        return None
+    if not parsed.path.startswith("/forms/"):
+        return None
+
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query["embedded"] = "true"
+    return urlunparse(parsed._replace(query=urlencode(query)))

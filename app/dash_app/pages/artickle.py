@@ -75,7 +75,13 @@ def show_article(pathname):
                 html.Hr(),
                 html.Div([
                     Purify(html=safe_html)
-                ])
+                ]),
+                html.Hr() if article.google_form_url else None,
+                html.Iframe(
+                    src=article.google_form_url,
+                    style={"width": "100%", "height": "1200px", "border": "0"},
+                    title=f"Google Form - {article.title}",
+                ) if article.google_form_url else None,
             ],
             radius="lg",
             p="5rem",
