@@ -1,4 +1,5 @@
 import bleach
+from datetime import date
 import dash
 from dash import Output, Input, callback, html, dcc
 import dash_mantine_components as dmc
@@ -33,6 +34,7 @@ def show_article(pathname):
         return dmc.Text("Nie znaleziono artykułu", )
 
     safe_html = prepare_html(article.content)
+    form_closed = bool(article.form_closes_at and date.today() > article.form_closes_at)
     can_edit = (
         getattr(current_user, "is_authenticated", False)
         and (current_user.has_role("admin") or current_user in article.authors)
@@ -77,11 +79,17 @@ def show_article(pathname):
                     Purify(html=safe_html)
                 ]),
                 html.Hr() if article.google_form_url else None,
+                dmc.Text(
+                    "Zbieranie odpowiedzi / zapisy na to wydarzenia zostały zakończone.",
+                    c="red",
+                    fw=700,
+                    ta="center",
+                ) if article.google_form_url and form_closed else
                 html.Iframe(
                     src=article.google_form_url,
                     style={"width": "100%", "height": "1200px", "border": "0"},
                     title=f"Google Form - {article.title}",
-                ) if article.google_form_url else None,
+                ),
             ],
             radius="lg",
             p="5rem",
