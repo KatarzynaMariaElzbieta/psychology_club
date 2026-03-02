@@ -1,6 +1,7 @@
 import base64
 import os
 import uuid
+from datetime import datetime
 
 import dash
 import dash_mantine_components as dmc
@@ -11,8 +12,8 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.dash_app.src import require_admin_or_author, url_for_uploads
-from app.models import Article, Image, Tag
+from app.dash_app.src import normalize_google_form_embed, require_admin_or_author, url_for_uploads
+from app.models import Article, Image, Tag, User
 
 dash.register_page(__name__, path_template="/edytuj_artykul/<id>")
 
@@ -21,6 +22,16 @@ layout = html.Div(
     [
         dmc.Container(
             [
+                dmc.MultiSelect(
+                    label="Autorzy",
+                    placeholder="Wybierz autorów artykułu",
+                    id="article-authors-input",
+                    data=[],
+                    value=[],
+                    searchable=True,
+                    clearable=True,
+                    mb=20,
+                ),
                 dmc.TextInput(
                     label="Tytuł artykułu",
                     placeholder="Wpisz tytuł",
@@ -39,6 +50,38 @@ layout = html.Div(
                     id="article-editor",
                     html="",
                     mih=300,
+                    mb=20,
+                    toolbar={
+                        "sticky": True,
+                        "controlsGroups": [
+                            ["Bold", "Italic", "Underline", "Code"],
+                            ["H1", "H2", "H3", "H4", "H5", "H6"],
+                            ["Strikethrough", "ClearFormatting", "Blockquote"],
+                            ["BulletList", "OrderedList"],
+                            ["Link", "Unlink"],
+                            ["AlignLeft", "AlignCenter", "AlignJustify", "AlignRight"],
+                            ["Undo", "Redo"],
+                        ],
+                    },
+                ),
+                dmc.Textarea(
+                    label="Google Form (opcjonalnie)",
+                    placeholder="Wklej link osadzenia lub cały kod iframe z Google Forms",
+                    id="article-google-form-input",
+                    autosize=True,
+                    minRows=2,
+                    mb=20,
+                ),
+                dmc.Stack(
+                    [
+                        dmc.Text("Data zamknięcia formularza (opcjonalnie)", size="sm", fw=500),
+                        dcc.Input(
+                            id="article-form-close-date-input",
+                            type="date",
+                            style={"width": "100%", "padding": "0.5rem"},
+                        ),
+                    ],
+                    gap=6,
                     mb=20,
                 ),
                 dcc.Upload(
@@ -71,6 +114,9 @@ layout = html.Div(
 @require_admin_or_author(raise_on_fail=True)
 def serve_edit_layout(article_id):
     article = Article.query.get_or_404(article_id)
+    users = User.query.order_by(User.username.asc().nullslast(), User.email.asc()).all()
+    author_options = [{"value": str(user.id), "label": user.username or user.email} for user in users]
+    selected_authors = [str(author.id) for author in article.authors]
 
     # Miniatury obrazów
     previews = []
@@ -117,9 +163,13 @@ def serve_edit_layout(article_id):
         previews.append(thumb)
 
     return (
+        author_options,
+        selected_authors,
         article.title,
         article.short_content,
         article.content,
+        article.google_form_url,
+        article.form_closes_at.isoformat() if article.form_closes_at else None,
         [tag.name for tag in article.tags],
         previews,
         article.id,
@@ -129,9 +179,13 @@ def serve_edit_layout(article_id):
 
 
 @callback(
+    Output("article-authors-input", "data"),
+    Output("article-authors-input", "value"),
     Output("article-title-input", "value"),
     Output("article-short-input", "value"),
     Output("article-editor", "html", allow_duplicate=True),
+    Output("article-google-form-input", "value"),
+    Output("article-form-close-date-input", "value"),
     Output("framework-tags-input", "value"),
     Output("uploaded-images_", "children", allow_duplicate=True),
     Output("article-id-store", "data"),
@@ -144,7 +198,20 @@ def load_article_for_edit(pathname):
     try:
         article_id = int(pathname.split("/")[-1])
     except (ValueError, IndexError):
-        return [dmc.Text("Nieprawidłowy adres artykułu")] + [None for _ in range(5)]
+        return (
+            [],
+            [],
+            "Nieprawidłowy adres artykułu",
+            None,
+            "",
+            None,
+            None,
+            [],
+            [],
+            None,
+            None,
+            {"display": "block"},
+        )
     result = serve_edit_layout(article_id)
     return result
 
@@ -155,9 +222,12 @@ def load_article_for_edit(pathname):
 @callback(
     Output("save-article-btn_edit", "children"),
     Input("save-article-btn_edit", "n_clicks"),
+    State("article-authors-input", "value"),
     State("article-title-input", "value"),
     State("article-short-input", "value"),
     State("article-editor", "html"),
+    State("article-google-form-input", "value"),
+    State("article-form-close-date-input", "value"),
     State("framework-tags-input", "value"),
     State("main-image-store_edit", "data"),
     State("uploaded-images_", "children"),
@@ -165,17 +235,41 @@ def load_article_for_edit(pathname):
     # prevent_initial_call=True,
 )
 @require_admin_or_author(
-    article_id_getter=lambda n_clicks, title, short_content, content, tags, main_image, previews, article_id: article_id,
+    article_id_getter=lambda n_clicks, authors, title, short_content, content, google_form_raw, form_close_date_raw, tags, main_image, previews, article_id: article_id,
     raise_on_fail=True,
 )
-def save_article_edit(n_clicks, title, short_content, content, tags, main_image, previews, article_id):
+def save_article_edit(n_clicks, authors, title, short_content, content, google_form_raw, form_close_date_raw, tags, main_image, previews, article_id):
     if not title or not content:
         return "⚠️ Uzupełnij wszystkie pola!"
+    if not authors:
+        return "⚠️ Wybierz co najmniej jednego autora!"
+
+    google_form_url = normalize_google_form_embed(google_form_raw)
+    if google_form_raw and not google_form_url:
+        return "⚠️ Dozwolone są tylko osadzenia Google Forms z docs.google.com/forms"
+    form_close_date = None
+    if form_close_date_raw:
+        try:
+            form_close_date = datetime.strptime(form_close_date_raw, "%Y-%m-%d").date()
+        except ValueError:
+            return "⚠️ Niepoprawny format daty zamknięcia formularza"
+
+    author_ids = []
+    for author_id in authors:
+        try:
+            author_ids.append(int(author_id))
+        except (TypeError, ValueError):
+            continue
+    if not author_ids:
+        return "⚠️ Wybierz poprawnych autorów!"
 
     article = Article.query.get_or_404(article_id)
     article.title = title.strip()
     article.short_content = short_content
     article.content = content
+    article.google_form_url = google_form_url
+    article.form_closes_at = form_close_date
+    article.authors = User.query.filter(User.id.in_(author_ids)).all()
 
     # --- Tagi ---
     tag_objects = []

@@ -1,6 +1,7 @@
 import base64
 import os
 import uuid
+from datetime import datetime
 
 import dash
 import dash_mantine_components as dmc
@@ -11,7 +12,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.dash_app.src import url_for_uploads, require_roles
+from app.dash_app.src import normalize_google_form_embed, url_for_uploads, require_roles
 from app.models import Article, Image, Tag, User
 
 dash.register_page(__name__, path="/nowy_artykul", name="Nowy artykuł")
@@ -72,6 +73,26 @@ def serve_layout():
                     ],
                 },
             ),
+            dmc.Textarea(
+                label="Google Form (opcjonalnie)",
+                placeholder="Wklej link osadzenia lub cały kod iframe z Google Forms",
+                id="article-google-form-input",
+                autosize=True,
+                minRows=2,
+                mb=20,
+            ),
+            dmc.Stack(
+                [
+                    dmc.Text("Data zamknięcia formularza (opcjonalnie)", size="sm", fw=500),
+                    dcc.Input(
+                        id="article-form-close-date-input",
+                        type="date",
+                        style={"width": "100%", "padding": "0.5rem"},
+                    ),
+                ],
+                gap=6,
+                mb=20,
+            ),
             # 🔹 Upload sekcja
             dcc.Upload(
                 id="upload-image",
@@ -105,20 +126,38 @@ layout = serve_layout
     State("article-title-input", "value"),
     State("article-short-input", "value"),
     State("article-editor", "html"),
+    State("article-google-form-input", "value"),
+    State("article-form-close-date-input", "value"),
     State("framework-tags-input", "value"),
     State("article-authors-input", "value"),
     State("main-image-store", "data"),
     State("uploaded-images-preview", "children"),
     prevent_initial_call=True,
 )
-def save_article(n_clicks, title, short_content, content, tags, authors, main_image, previews):
+def save_article(n_clicks, title, short_content, content, google_form_raw, form_close_date_raw, tags, authors, main_image, previews):
     if not title or not content:
         return "⚠️ Uzupełnij wszystkie pola!"
     if not authors:
         return "⚠️ Wybierz co najmniej jednego autora!"
 
+    google_form_url = normalize_google_form_embed(google_form_raw)
+    if google_form_raw and not google_form_url:
+        return "⚠️ Dozwolone są tylko osadzenia Google Forms z docs.google.com/forms"
+    form_close_date = None
+    if form_close_date_raw:
+        try:
+            form_close_date = datetime.strptime(form_close_date_raw, "%Y-%m-%d").date()
+        except ValueError:
+            return "⚠️ Niepoprawny format daty zamknięcia formularza"
+
     # --- Utwórz nowy artykuł ---
-    article = Article(title=title.strip(), content=content, short_content=short_content)
+    article = Article(
+        title=title.strip(),
+        content=content,
+        short_content=short_content,
+        google_form_url=google_form_url,
+        form_closes_at=form_close_date,
+    )
     author_ids = []
     for author_id in authors:
         try:
