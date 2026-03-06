@@ -36,8 +36,8 @@ def show_article(pathname):
     safe_html = prepare_html(article.content)
     form_closed = bool(article.form_closes_at and date.today() > article.form_closes_at)
     can_edit = (
-        getattr(current_user, "is_authenticated", False)
-        and (current_user.has_role("admin") or current_user in article.authors)
+            getattr(current_user, "is_authenticated", False)
+            and (current_user.has_role("admin") or current_user in article.authors)
     )
     title_children = [dmc.Title(article.title, order=1, style={"marginBottom": "1rem", "padding-top": "1rem"})]
     if can_edit:
@@ -87,7 +87,8 @@ def show_article(pathname):
                 ) if article.google_form_url and form_closed else
                 html.Iframe(
                     src=article.google_form_url,
-                    style={"width": "100%", "height": "1200px", "border": "0"},
+                    style={"width": "100%", "height": "1200px", "border": "0",
+                           "display": "block" if article.google_form_url else "none"},
                     title=f"Google Form - {article.title}",
                 ),
             ],
