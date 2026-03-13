@@ -1,12 +1,19 @@
+import json
 import os
 import uuid
+from zoneinfo import ZoneInfo
 
+from datetime import datetime, time
+from sqlalchemy import func
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_security import SQLAlchemyUserDatastore, hash_password, roles_accepted
 from werkzeug.utils import secure_filename
 
 from app import models
 from app.extensions import db
+from app.mailing_import import parse_recipient_file
+from email_validator import EmailNotValidError, validate_email
+from app.mailing_jobs import cache_recipients, enqueue_mailing_batch
 
 roles_bp = Blueprint("roles", __name__, url_prefix="/admin")
 
@@ -207,6 +214,235 @@ def downloads():
 
     files = models.DownloadFile.query.order_by(models.DownloadFile.created_at.desc()).all()
     return render_template("roles/downloads.html", files=files)
+
+
+@roles_bp.route("/mailing", methods=["GET", "POST"])
+@roles_accepted("admin")
+def mailing():
+    warsaw_tz = ZoneInfo("Europe/Warsaw")
+    utc_tz = ZoneInfo("UTC")
+    if request.method == "POST" and request.form.get("action") == "retry":
+        batch_id = request.form.get("batch_id")
+        if batch_id:
+            batch = models.MailingBatch.query.get(int(batch_id))
+            if batch:
+                enqueue_mailing_batch(batch.id, recipient_cache_key=batch.recipient_cache_key)
+                if batch.recipient_cache_key:
+                    flash("Wysyłka została ponownie zaplanowana.", "success")
+                else:
+                    flash("Brak zapisanej listy odbiorców. Wgraj plik ponownie.", "danger")
+        return redirect(url_for("roles.mailing"))
+
+    if request.method == "POST":
+        template_type_id = request.form.get("template_type_id")
+        template_type = None
+        template_id = ""
+        subject = ""
+        if template_type_id:
+            template_type = models.MailingTemplateType.query.get(int(template_type_id))
+            if template_type:
+                template_id = template_type.template_id
+
+        template_id = (template_id or request.form.get("template_id") or "").strip()
+        subject = (request.form.get("subject") or "").strip()
+        visible_to_email = (request.form.get("visible_to_email") or "").strip()
+        visible_to_name = (request.form.get("visible_to_name") or "").strip() or None
+        template_data = {}
+        for key, value in request.form.items():
+            if key.startswith("tpl_"):
+                cleaned = (value or "").strip()
+                if cleaned:
+                    template_data[key[4:]] = cleaned
+        send_at_raw = (request.form.get("send_at") or "").strip()
+        auto_delete = request.form.get("auto_delete") == "on"
+        upload_file = request.files.get("file")
+
+        if not template_id:
+            flash("ID szablonu jest wymagane.", "danger")
+            return redirect(url_for("roles.mailing"))
+
+        if not subject:
+            flash("Temat wiadomości jest wymagany.", "danger")
+            return redirect(url_for("roles.mailing"))
+
+        if not upload_file or not upload_file.filename:
+            flash("Wybierz plik CSV lub XLSX z adresami e-mail.", "danger")
+            return redirect(url_for("roles.mailing"))
+
+        if visible_to_email:
+            try:
+                visible_to_email = validate_email(visible_to_email, check_deliverability=False).email
+            except EmailNotValidError:
+                flash("Adres reply-to jest nieprawidłowy.", "danger")
+                return redirect(url_for("roles.mailing"))
+
+        try:
+            if send_at_raw:
+                local_dt = datetime.fromisoformat(send_at_raw).replace(tzinfo=warsaw_tz)
+                send_at = local_dt.astimezone(utc_tz).replace(tzinfo=None)
+            else:
+                send_at = datetime.utcnow()
+        except ValueError:
+            flash("Nieprawidłowa data wysyłki.", "danger")
+            return redirect(url_for("roles.mailing"))
+
+        original_name = secure_filename(upload_file.filename)
+        if not original_name:
+            flash("Nieprawidłowa nazwa pliku.", "danger")
+            return redirect(url_for("roles.mailing"))
+
+        _, ext = os.path.splitext(original_name)
+        ext = ext.lower()
+        if ext not in {".csv", ".xlsx", ".xlsm", ".xltx", ".xltm"}:
+            flash("Obsługiwane są tylko pliki CSV lub XLSX.", "danger")
+            return redirect(url_for("roles.mailing"))
+
+        stored_name = f"{uuid.uuid4().hex}{ext}"
+        upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing")
+        os.makedirs(upload_dir, exist_ok=True)
+        stored_path = os.path.join(upload_dir, stored_name)
+        upload_file.save(stored_path)
+
+        try:
+            emails = parse_recipient_file(stored_path)
+        except Exception as exc:
+            if os.path.exists(stored_path):
+                os.remove(stored_path)
+            flash(str(exc), "danger")
+            return redirect(url_for("roles.mailing"))
+
+        if not emails:
+            if os.path.exists(stored_path):
+                os.remove(stored_path)
+            flash("Plik nie zawiera poprawnych adresów e-mail.", "danger")
+            return redirect(url_for("roles.mailing"))
+
+        local_send_at = send_at.replace(tzinfo=utc_tz).astimezone(warsaw_tz)
+        day_start_local = datetime.combine(local_send_at.date(), time.min, tzinfo=warsaw_tz)
+        day_end_local = datetime.combine(local_send_at.date(), time.max, tzinfo=warsaw_tz)
+        day_start_utc = day_start_local.astimezone(utc_tz).replace(tzinfo=None)
+        day_end_utc = day_end_local.astimezone(utc_tz).replace(tzinfo=None)
+
+        daily_limit = int(current_app.config.get("MAILERSEND_DAILY_LIMIT", 100) or 100)
+        scheduled_total = (
+            db.session.query(func.coalesce(func.sum(models.MailingBatch.total_recipients), 0))
+            .filter(models.MailingBatch.send_at >= day_start_utc, models.MailingBatch.send_at <= day_end_utc)
+            .scalar()
+        )
+        if scheduled_total + len(emails) > daily_limit:
+            if os.path.exists(stored_path):
+                os.remove(stored_path)
+            flash(
+                f"Limit dzienny {daily_limit} został przekroczony (zaplanowano {scheduled_total}).",
+                "danger",
+            )
+            return redirect(url_for("roles.mailing"))
+
+        recipient_cache_key = cache_recipients(emails)
+        batch = models.MailingBatch(
+            template_type_id=template_type.id if template_type else None,
+            template_id=template_id,
+            template_data=json.dumps(template_data, ensure_ascii=False) if template_data else None,
+            subject=subject,
+            recipient_cache_key=recipient_cache_key,
+            visible_to_email=visible_to_email,
+            visible_to_name=visible_to_name,
+            send_at=send_at,
+            total_recipients=len(emails),
+            original_name=original_name,
+            stored_name=stored_name,
+            auto_delete=auto_delete,
+            status="queued",
+        )
+        db.session.add(batch)
+        db.session.commit()
+
+        enqueue_mailing_batch(batch.id, recipient_cache_key=recipient_cache_key)
+        if os.path.exists(stored_path):
+            os.remove(stored_path)
+        flash("Wysyłka została zaplanowana.", "success")
+        return redirect(url_for("roles.mailing"))
+
+    batches = models.MailingBatch.query.order_by(models.MailingBatch.created_at.desc()).all()
+    default_visible = current_app.config.get("MAIL_DEFAULT_SENDER_EMAIL", "")
+    default_name = current_app.config.get("MAIL_DEFAULT_SENDER_NAME", "")
+    for batch in batches:
+        if batch.created_at:
+            batch.created_at = batch.created_at.replace(tzinfo=utc_tz).astimezone(warsaw_tz)
+        if batch.send_at:
+            batch.send_at = batch.send_at.replace(tzinfo=utc_tz).astimezone(warsaw_tz)
+    template_types = models.MailingTemplateType.query.order_by(models.MailingTemplateType.name.asc()).all()
+    selected_type = None
+    selected_fields = []
+    selected_type_id = request.args.get("type_id")
+    if selected_type_id:
+        selected_type = models.MailingTemplateType.query.get(int(selected_type_id))
+        if selected_type and selected_type.fields:
+            for line in selected_type.fields.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                if "|" in line:
+                    key, label = [part.strip() for part in line.split("|", 1)]
+                else:
+                    key, label = line, line
+                if key:
+                    selected_fields.append({"key": key, "label": label or key})
+    return render_template(
+        "roles/mailing.html",
+        batches=batches,
+        default_visible=default_visible,
+        default_name=default_name,
+        template_types=template_types,
+        selected_type=selected_type,
+        selected_fields=selected_fields,
+    )
+
+
+@roles_bp.route("/mailing-types", methods=["GET", "POST"])
+@roles_accepted("admin")
+def mailing_types():
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        template_id = (request.form.get("template_id") or "").strip()
+        fields = (request.form.get("fields") or "").strip() or None
+
+        if not name or not template_id:
+            flash("Nazwa i ID szablonu są wymagane.", "danger")
+            return redirect(url_for("roles.mailing_types"))
+
+        existing = models.MailingTemplateType.query.filter_by(name=name).first()
+        if existing:
+            flash("Taki typ maila już istnieje.", "danger")
+            return redirect(url_for("roles.mailing_types"))
+
+        db.session.add(
+            models.MailingTemplateType(
+                name=name,
+                template_id=template_id,
+                fields=fields,
+            )
+        )
+        db.session.commit()
+        flash("Typ maila został zapisany.", "success")
+        return redirect(url_for("roles.mailing_types"))
+
+    template_types = models.MailingTemplateType.query.order_by(models.MailingTemplateType.created_at.desc()).all()
+    return render_template("roles/mailing_types.html", template_types=template_types)
+
+
+@roles_bp.route("/mailing-types/<int:type_id>/delete", methods=["POST"])
+@roles_accepted("admin")
+def delete_mailing_type(type_id: int):
+    template_type = models.MailingTemplateType.query.get(type_id)
+    if not template_type:
+        flash("Typ maila nie istnieje.", "danger")
+        return redirect(url_for("roles.mailing_types"))
+
+    db.session.delete(template_type)
+    db.session.commit()
+    flash("Typ maila został usunięty.", "success")
+    return redirect(url_for("roles.mailing_types"))
 
 
 @roles_bp.route("/downloads/<int:file_id>/delete", methods=["POST"])

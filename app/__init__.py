@@ -16,6 +16,7 @@ from app.cookie_texts import (
 from app.dash_app.pages.avatars import register_avatar_routes
 from app.extensions import db, mail, migrate, security
 from app.security_forms import ClubRegisterForm
+from email.utils import parseaddr
 
 
 def _env_bool(name, default=False):
@@ -79,7 +80,14 @@ def create_app():
     app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER", "")
     app.config["MAIL_TIMEOUT"] = _env_int("MAIL_TIMEOUT", 10)
     app.config["MAILERSEND_API_TOKEN"] = os.getenv("MAILERSEND_API_TOKEN", "")
-    app.config["MAILERSEND_API_URL"] = os.getenv("MAILERSEND_API_URL", "https://api.mailersend.com/v1/email")
+    app.config["MAILERSEND_API_URL"] = os.getenv("MAILERSEND_API_URL")
+    app.config["MAILERSEND_BATCH_SIZE"] = _env_int("MAILERSEND_BATCH_SIZE", 10)
+    app.config["MAILERSEND_DAILY_LIMIT"] = _env_int("MAILERSEND_DAILY_LIMIT", 100)
+    app.config["REDIS_URL"] = os.getenv("REDIS_URL")
+
+    sender_name, sender_email = parseaddr(app.config["MAIL_DEFAULT_SENDER"] or "")
+    app.config["MAIL_DEFAULT_SENDER_EMAIL"] = sender_email.strip()
+    app.config["MAIL_DEFAULT_SENDER_NAME"] = sender_name.strip()
 
     # Publiczny host do linków absolutnych (np. reset hasła) ustawiaj świadomie.
     # Lokalnie lepiej bazować na aktualnym hoście żądania, bez wymuszania SERVER_NAME.

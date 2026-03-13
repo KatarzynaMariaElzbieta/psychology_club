@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Mailing wydarzeń{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+<div class="admin-page">
+  <div class="admin-header">
+    <h1>Mailing wydarzeń</h1>
+    <p class="admin-subtitle">Wgraj listę CSV/XLSX i zaplanuj wysyłkę szablonu MailerSend.</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="admin-flash-list">
+        {% for category, message in messages %}
+          <li class="admin-flash-item">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Nowa wysyłka</h2>
+    </div>
+    <div class="admin-card__body">
+      <form method="get" class="admin-field">
+        <label for="type_id">Typ maila</label>
+        <select id="type_id" name="type_id" onchange="this.form.submit()" class="admin-select">
+          <option value="">-- wybierz --</option>
+          {% for t in template_types %}
+            <option value="{{ t.id }}" {% if selected_type and t.id == selected_type.id %}selected{% endif %}>
+              {{ t.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <form method="post" enctype="multipart/form-data">
+        {% if selected_type %}
+          <input type="hidden" name="template_type_id" value="{{ selected_type.id }}">
+        {% else %}
+          <div class="admin-field">
+            <label for="template_id">MailerSend template ID</label>
+            <input type="text" id="template_id" name="template_id" placeholder="np. x2p0347jv834zdrn" required>
+          </div>
+          <div class="admin-field">
+            <label for="subject">Temat wiadomości</label>
+            <input type="text" id="subject" name="subject" required>
+          </div>
+        {% endif %}
+        {% if selected_fields %}
+          <div class="admin-card" style="margin: 1rem 0;">
+            <div class="admin-card__head">
+              <h2>Dane do szablonu</h2>
+            </div>
+            <div class="admin-card__body">
+              <div class="admin-field">
+                <label for="subject">Temat wiadomości</label>
+                <input type="text" id="subject" name="subject" required>
+              </div>
+              {% for field in selected_fields %}
+                <div class="admin-field">
+                  <label for="tpl_{{ field.key }}">{{ field.label }}</label>
+                  <input type="text" id="tpl_{{ field.key }}" name="tpl_{{ field.key }}">
+                </div>
+              {% endfor %}
+              <div class="admin-muted">Wypełnij tylko pola, które występują w tym typie maila.</div>
+            </div>
+          </div>
+        {% endif %}
+        <div class="admin-field">
+          <label for="visible_to_email">Reply-to (opcjonalnie)</label>
+          <input type="text" id="visible_to_email" name="visible_to_email" value="{{ default_visible }}">
+        </div>
+        <div class="admin-field">
+          <label for="visible_to_name">Nazwa reply-to (opcjonalnie)</label>
+          <input type="text" id="visible_to_name" name="visible_to_name" value="{{ default_name }}">
+        </div>
+        <div class="admin-field">
+          <label for="send_at">Wyślij o (opcjonalnie)</label>
+          <input type="datetime-local" id="send_at" name="send_at">
+          <div class="admin-muted">Jeśli puste, wysyłka ruszy od razu.</div>
+        </div>
+        <div class="admin-field">
+          <label for="file">Plik CSV/XLSX</label>
+          <input type="file" id="file" name="file" accept=".csv,.xlsx,.xlsm,.xltx,.xltm" required>
+          <div class="admin-muted">Kolumna z e-mailami powinna mieć nagłówek "email" (lub podobny).</div>
+        </div>
+        <div class="admin-field">
+          <label class="admin-checkitem">
+            <input type="checkbox" name="auto_delete" checked>
+            Usuń plik po pomyślnej wysyłce
+          </label>
+        </div>
+        <div class="admin-actions">
+          <button class="admin-btn" type="submit">Zaplanuj wysyłkę</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Historia wysyłek</h2>
+    </div>
+    <div class="admin-card__body">
+      {% if batches %}
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Data utworzenia</th>
+              <th>Wyślij o</th>
+              <th>Template</th>
+              <th>Odbiorcy</th>
+              <th>Status</th>
+              <th>Plik</th>
+              <th>Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for batch in batches %}
+              <tr>
+                <td>{{ batch.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ batch.send_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ batch.template_id }}</td>
+                <td>{{ batch.sent_count }}/{{ batch.total_recipients }}</td>
+                <td>{{ batch.status }}</td>
+                <td>{{ batch.original_name }}</td>
+                <td>
+                  {% if batch.status in ['queued', 'failed', 'partial', 'scheduled'] %}
+                    <form method="post">
+                      <input type="hidden" name="action" value="retry">
+                      <input type="hidden" name="batch_id" value="{{ batch.id }}">
+                      <button class="admin-btn" type="submit">Ponów</button>
+                    </form>
+                  {% else %}
+                    <span class="admin-muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% if batch.last_error %}
+                <tr>
+                  <td colspan="7" class="admin-muted">Błąd: {{ batch.last_error }}</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="admin-muted">Brak wysyłek w historii.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

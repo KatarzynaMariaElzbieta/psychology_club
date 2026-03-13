@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Typy maili{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+
+<div class="admin-page">
+  <div class="admin-header">
+    <h1>Typy maili</h1>
+    <p class="admin-subtitle">Zdefiniuj typ maila, ID szablonu i pola do wypełnienia.</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="admin-flash-list">
+        {% for category, message in messages %}
+          <li class="admin-flash-item">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Nowy typ</h2>
+    </div>
+    <div class="admin-card__body">
+      <form method="post">
+        <div class="admin-field">
+          <label for="name">Nazwa typu</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="admin-field">
+          <label for="template_id">MailerSend template ID</label>
+          <input type="text" id="template_id" name="template_id" required>
+        </div>
+        <div class="admin-field">
+          <label for="fields">Pola szablonu (po 1 w linii)</label>
+          <textarea id="fields" name="fields" placeholder="event_name|Nazwa wydarzenia&#10;time|Godzina&#10;place|Miejsce"></textarea>
+          <div class="admin-muted">Format: klucz|etykieta. Jeśli brak etykiety, użyjemy klucza.</div>
+        </div>
+        <div class="admin-actions">
+          <button class="admin-btn" type="submit">Zapisz typ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Lista typów</h2>
+    </div>
+    <div class="admin-card__body">
+      {% if template_types %}
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Nazwa</th>
+              <th>Template ID</th>
+              <th>Pola</th>
+              <th>Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in template_types %}
+              <tr>
+                <td>{{ t.name }}</td>
+                <td>{{ t.template_id }}</td>
+                <td>
+                  {% if t.fields %}
+                    {{ t.fields | replace('\n', ', ') }}
+                  {% else %}
+                    <span class="admin-muted">Brak</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form method="post" action="{{ url_for('roles.delete_mailing_type', type_id=t.id) }}">
+                    <button class="admin-btn" type="submit">Usuń</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="admin-muted">Brak zdefiniowanych typów.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
