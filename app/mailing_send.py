@@ -37,15 +37,7 @@ def send_template_email(
                 else:
                     builder = builder.bcc(email)
 
-    if template_data:
-        personalization = []
-        if visible_to.get("email"):
-            personalization.append({"email": visible_to["email"], "data": template_data})
-        for recipient in bcc_list:
-            email = recipient.get("email")
-            if email:
-                personalization.append({"email": email, "data": template_data})
-        builder = builder.personalize_many(personalization)
+    # Brak personalizacji - wysyłka jednolita do wszystkich odbiorców.
 
     email = builder.subject(subject).template(template_id).build()
     response = ms.emails.send(email)
