@@ -269,15 +269,12 @@ def mailing():
             flash("Wybierz plik CSV lub XLSX z adresami e-mail.", "danger")
             return redirect(url_for("roles.mailing"))
 
-        if not visible_to_email:
-            flash("Podaj adres widoczny w polu Do (To).", "danger")
-            return redirect(url_for("roles.mailing"))
-
-        try:
-            visible_to_email = validate_email(visible_to_email, check_deliverability=False).email
-        except EmailNotValidError:
-            flash("Adres widoczny w polu Do (To) jest nieprawidłowy.", "danger")
-            return redirect(url_for("roles.mailing"))
+        if visible_to_email:
+            try:
+                visible_to_email = validate_email(visible_to_email, check_deliverability=False).email
+            except EmailNotValidError:
+                flash("Adres reply-to jest nieprawidłowy.", "danger")
+                return redirect(url_for("roles.mailing"))
 
         try:
             if send_at_raw:

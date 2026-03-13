@@ -2,12 +2,12 @@ from flask import current_app
 from mailersend import EmailBuilder, MailerSendClient
 
 
-def send_template_email(
+def send_bulk_template_emails(
     template_id: str,
     subject: str,
-    visible_to: dict,
-    bcc_list: list[dict],
+    recipients: list[dict],
     template_data: dict | None = None,
+    reply_to: dict | None = None,
 ) -> None:
     token = current_app.config.get("MAILERSEND_API_TOKEN", "").strip()
     if not token:
@@ -20,28 +20,25 @@ def send_template_email(
     sender_name = (current_app.config.get("MAIL_DEFAULT_SENDER_NAME") or "").strip()
 
     ms = MailerSendClient(api_key=token)
-    builder = EmailBuilder().from_email(sender_email, sender_name or None)
+    email_requests = []
 
-    if visible_to.get("name"):
-        builder = builder.to_many([{"email": visible_to["email"], "name": visible_to["name"]}])
-    else:
-        builder = builder.to_many([{"email": visible_to["email"]}])
+    for recipient in recipients:
+        email = recipient.get("email")
+        name = recipient.get("name")
+        if not email:
+            continue
+        builder = EmailBuilder().from_email(sender_email, sender_name or None)
+        builder = builder.to(email, name)
+        if reply_to and reply_to.get("email"):
+            builder = builder.reply_to(reply_to["email"], reply_to.get("name"))
+        if template_data:
+            builder = builder.personalize(email, **template_data)
+        email_requests.append(builder.subject(subject).template(template_id).build())
 
-    if bcc_list:
-        for recipient in bcc_list:
-            email = recipient.get("email")
-            name = recipient.get("name")
-            if email:
-                if name:
-                    builder = builder.bcc(email, name)
-                else:
-                    builder = builder.bcc(email)
+    if not email_requests:
+        return
 
-    # Brak personalizacji - wysyłka jednolita do wszystkich odbiorców.
+    response = ms.emails.send_bulk(email_requests)
 
-    email = builder.subject(subject).template(template_id).build()
-    response = ms.emails.send(email)
-
-    if isinstance(response, dict):
-        if response.get("message") not in {"Email sent", "Email queued", None}:
-            raise RuntimeError(f"MailerSend odpowiedź: {response}")
+    if isinstance(response, dict) and response.get("message") not in {None, "Bulk email queued"}:
+        raise RuntimeError(f"MailerSend odpowiedź: {response}")

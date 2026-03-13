@@ -10,7 +10,7 @@ from sqlalchemy import func
 from app import create_app
 from app.extensions import db
 from app.mailing_import import parse_recipient_file
-from app.mailing_send import send_template_email
+from app.mailing_send import send_bulk_template_emails
 from app.models import MailingBatch
 
 
@@ -108,23 +108,24 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
         return
 
     batch_size = int(current_app.config.get("MAILERSEND_BATCH_SIZE", 10) or 10)
-    visible_to = {"email": batch.visible_to_email}
-    if batch.visible_to_name:
-        visible_to["name"] = batch.visible_to_name
+    reply_to = None
+    if batch.visible_to_email:
+        reply_to = {"email": batch.visible_to_email}
+        if batch.visible_to_name:
+            reply_to["name"] = batch.visible_to_name
 
     sent = 0
     failed = 0
 
     for i in range(0, len(emails), batch_size):
         chunk = emails[i : i + batch_size]
-        bcc_list = [{"email": email} for email in chunk]
         try:
-            send_template_email(
+            send_bulk_template_emails(
                 batch.template_id,
                 batch.subject,
-                visible_to,
-                bcc_list,
+                [{"email": email} for email in chunk],
                 template_data=template_data,
+                reply_to=reply_to,
             )
             sent += len(chunk)
         except Exception as exc:
