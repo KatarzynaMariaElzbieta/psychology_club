@@ -100,7 +100,7 @@ def enqueue_mailing_batch(batch_id: int) -> None:
         return
 
     send_at = batch.send_at
-    now = datetime.now(send_at.tzinfo)
+    now = datetime.utcnow()
     if send_at <= now:
         queue.enqueue(send_mailing_batch, batch_id)
         batch.status = "queued"

@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+from zoneinfo import ZoneInfo
 
 from datetime import datetime
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
@@ -217,6 +218,7 @@ def downloads():
 @roles_bp.route("/mailing", methods=["GET", "POST"])
 @roles_accepted("admin")
 def mailing():
+    warsaw_tz = ZoneInfo("Europe/Warsaw")
     if request.method == "POST" and request.form.get("action") == "retry":
         batch_id = request.form.get("batch_id")
         if batch_id:
@@ -267,7 +269,11 @@ def mailing():
             return redirect(url_for("roles.mailing"))
 
         try:
-            send_at = datetime.fromisoformat(send_at_raw) if send_at_raw else datetime.now()
+            if send_at_raw:
+                local_dt = datetime.fromisoformat(send_at_raw).replace(tzinfo=warsaw_tz)
+                send_at = local_dt.astimezone(ZoneInfo("UTC")).replace(tzinfo=None)
+            else:
+                send_at = datetime.utcnow()
         except ValueError:
             flash("Nieprawidłowa data wysyłki.", "danger")
             return redirect(url_for("roles.mailing"))
@@ -335,6 +341,11 @@ def mailing():
     batches = models.MailingBatch.query.order_by(models.MailingBatch.created_at.desc()).all()
     default_visible = current_app.config.get("MAIL_DEFAULT_SENDER_EMAIL", "")
     default_name = current_app.config.get("MAIL_DEFAULT_SENDER_NAME", "")
+    for batch in batches:
+        if batch.created_at:
+            batch.created_at = batch.created_at.replace(tzinfo=ZoneInfo("UTC")).astimezone(warsaw_tz)
+        if batch.send_at:
+            batch.send_at = batch.send_at.replace(tzinfo=ZoneInfo("UTC")).astimezone(warsaw_tz)
     template_types = models.MailingTemplateType.query.order_by(models.MailingTemplateType.name.asc()).all()
     selected_type = None
     selected_fields = []
