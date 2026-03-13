@@ -26,6 +26,16 @@
       <h3>Do pobrania</h3>
       <p>Dodawaj i usuwaj pliki udostępniane na stronie „Do pobrania”.</p>
     </a>
+
+    <a class="admin-tile" href="{{ url_for('roles.mailing') }}">
+      <h3>Mailing wydarzeń</h3>
+      <p>Wgrywaj listy CSV/XLSX i wysyłaj szablony MailerSend.</p>
+    </a>
+
+    <a class="admin-tile" href="{{ url_for('roles.mailing_types') }}">
+      <h3>Typy maili</h3>
+      <p>Ustaw typ maila, ID szablonu i pola do wypełnienia.</p>
+    </a>
   </div>
 </div>
 {% endblock %}

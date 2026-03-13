@@ -107,3 +107,38 @@ class DownloadFile(db.Model):
 
     def __repr__(self):
         return f"<DownloadFile {self.title}>"
+
+
+class MailingBatch(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    template_type_id = db.Column(db.Integer, db.ForeignKey("mailing_template_type.id"), nullable=True)
+    template_id = db.Column(db.String(120), nullable=False)
+    template_data = db.Column(db.Text, nullable=True)
+    visible_to_email = db.Column(db.String(255), nullable=False)
+    visible_to_name = db.Column(db.String(120), nullable=True)
+    send_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    status = db.Column(db.String(24), nullable=False, default="queued")
+    total_recipients = db.Column(db.Integer, nullable=False, default=0)
+    sent_count = db.Column(db.Integer, nullable=False, default=0)
+    failed_count = db.Column(db.Integer, nullable=False, default=0)
+    original_name = db.Column(db.String(255), nullable=False)
+    stored_name = db.Column(db.String(255), nullable=False, unique=True)
+    last_error = db.Column(db.Text, nullable=True)
+    auto_delete = db.Column(db.Boolean, nullable=False, default=True)
+
+    def __repr__(self):
+        return f"<MailingBatch {self.id} {self.template_id} {self.status}>"
+
+
+class MailingTemplateType(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False, unique=True)
+    template_id = db.Column(db.String(120), nullable=False)
+    fields = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    batches = db.relationship("MailingBatch", backref="template_type", lazy=True)
+
+    def __repr__(self):
+        return f"<MailingTemplateType {self.name}>"
