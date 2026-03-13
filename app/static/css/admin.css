@@ -6,6 +6,19 @@
   color: #1f2937;
 }
 
+body[data-admin-ui-version="admin-ui-v3"] {
+  display: block;
+  height: auto;
+  min-height: 100vh;
+  align-items: initial;
+  justify-content: initial;
+  background: #f5f6fa;
+}
+
+body[data-admin-ui-version="admin-ui-v3"] .admin-page {
+  margin-top: 1.5rem;
+}
+
 .admin-header {
   margin-bottom: 1rem;
 }

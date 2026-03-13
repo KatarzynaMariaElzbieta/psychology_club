@@ -237,12 +237,14 @@ def mailing():
         template_type_id = request.form.get("template_type_id")
         template_type = None
         template_id = ""
+        subject = ""
         if template_type_id:
             template_type = models.MailingTemplateType.query.get(int(template_type_id))
             if template_type:
                 template_id = template_type.template_id
 
         template_id = (template_id or request.form.get("template_id") or "").strip()
+        subject = (request.form.get("subject") or "").strip()
         visible_to_email = (request.form.get("visible_to_email") or "").strip()
         visible_to_name = (request.form.get("visible_to_name") or "").strip() or None
         template_data = {}
@@ -257,6 +259,10 @@ def mailing():
 
         if not template_id:
             flash("ID szablonu jest wymagane.", "danger")
+            return redirect(url_for("roles.mailing"))
+
+        if not subject:
+            flash("Temat wiadomości jest wymagany.", "danger")
             return redirect(url_for("roles.mailing"))
 
         if not upload_file or not upload_file.filename:
@@ -340,6 +346,7 @@ def mailing():
             template_type_id=template_type.id if template_type else None,
             template_id=template_id,
             template_data=json.dumps(template_data, ensure_ascii=False) if template_data else None,
+            subject=subject,
             recipient_cache_key=recipient_cache_key,
             visible_to_email=visible_to_email,
             visible_to_name=visible_to_name,

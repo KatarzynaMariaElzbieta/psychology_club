@@ -4,6 +4,7 @@ from mailersend import EmailBuilder, MailerSendClient
 
 def send_template_email(
     template_id: str,
+    subject: str,
     visible_to: dict,
     bcc_list: list[dict],
     template_data: dict | None = None,
@@ -46,7 +47,7 @@ def send_template_email(
                 personalization.append({"email": email, "data": template_data})
         builder = builder.personalize_many(personalization)
 
-    email = builder.template(template_id).build()
+    email = builder.subject(subject).template(template_id).build()
     response = ms.emails.send(email)
 
     if isinstance(response, dict):

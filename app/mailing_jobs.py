@@ -119,7 +119,13 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
         chunk = emails[i : i + batch_size]
         bcc_list = [{"email": email} for email in chunk]
         try:
-            send_template_email(batch.template_id, visible_to, bcc_list, template_data=template_data)
+            send_template_email(
+                batch.template_id,
+                batch.subject,
+                visible_to,
+                bcc_list,
+                template_data=template_data,
+            )
             sent += len(chunk)
         except Exception as exc:
             failed += len(chunk)
