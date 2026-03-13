@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 from datetime import datetime
 
 from flask import current_app
@@ -11,13 +12,40 @@ from app.mailing_send import send_template_email
 from app.models import MailingBatch
 
 
-def send_mailing_batch(batch_id: int) -> None:
+def _get_redis_client():
+    from redis import Redis
+
+    redis_url = current_app.config.get("REDIS_URL", "redis://localhost:6379/0")
+    return Redis.from_url(redis_url)
+
+
+def cache_recipients(emails: list[str]) -> str:
+    redis_client = _get_redis_client()
+    key = f"mailing:recipients:{uuid.uuid4().hex}"
+    redis_client.setex(key, 60 * 60 * 24 * 7, json.dumps(emails))
+    return key
+
+
+def load_cached_recipients(cache_key: str | None) -> list[str] | None:
+    if not cache_key:
+        return None
+    redis_client = _get_redis_client()
+    raw = redis_client.get(cache_key)
+    if not raw:
+        return None
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+
+
+def send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -> None:
     app = create_app()
     with app.app_context():
-        _send_mailing_batch(batch_id)
+        _send_mailing_batch(batch_id, recipient_cache_key)
 
 
-def _send_mailing_batch(batch_id: int) -> None:
+def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -> None:
     batch = MailingBatch.query.get(batch_id)
     if not batch:
         return
@@ -28,14 +56,16 @@ def _send_mailing_batch(batch_id: int) -> None:
     batch.last_error = None
     db.session.commit()
 
-    stored_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing", batch.stored_name)
-    try:
-        emails = parse_recipient_file(stored_path)
-    except Exception as exc:
-        batch.status = "failed"
-        batch.last_error = str(exc)
-        db.session.commit()
-        return
+    emails = load_cached_recipients(recipient_cache_key or batch.recipient_cache_key)
+    if not emails:
+        stored_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing", batch.stored_name)
+        try:
+            emails = parse_recipient_file(stored_path)
+        except Exception as exc:
+            batch.status = "failed"
+            batch.last_error = str(exc)
+            db.session.commit()
+            return
 
     template_data = None
     if batch.template_data:
@@ -49,7 +79,7 @@ def _send_mailing_batch(batch_id: int) -> None:
 
     if not emails:
         batch.status = "failed"
-        batch.last_error = "Brak poprawnych adresów e-mail w pliku"
+        batch.last_error = "Brak poprawnych adresów e-mail"
         db.session.commit()
         return
 
@@ -82,13 +112,19 @@ def _send_mailing_batch(batch_id: int) -> None:
     db.session.commit()
 
     if batch.status == "sent" and batch.auto_delete:
+        if batch.recipient_cache_key:
+            try:
+                _get_redis_client().delete(batch.recipient_cache_key)
+            except Exception:
+                pass
         try:
+            stored_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing", batch.stored_name)
             os.remove(stored_path)
         except OSError:
             pass
 
 
-def enqueue_mailing_batch(batch_id: int) -> None:
+def enqueue_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -> None:
     from redis import Redis
     from rq import Queue
 
@@ -102,10 +138,10 @@ def enqueue_mailing_batch(batch_id: int) -> None:
     send_at = batch.send_at
     now = datetime.utcnow()
     if send_at <= now:
-        queue.enqueue(send_mailing_batch, batch_id)
+        queue.enqueue(send_mailing_batch, batch_id, recipient_cache_key)
         batch.status = "queued"
     else:
-        queue.enqueue_at(send_at, send_mailing_batch, batch_id)
+        queue.enqueue_at(send_at, send_mailing_batch, batch_id, recipient_cache_key)
         batch.status = "scheduled"
 
     db.session.commit()

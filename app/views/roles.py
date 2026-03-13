@@ -12,7 +12,7 @@ from app import models
 from app.extensions import db
 from app.mailing_import import parse_recipient_file
 from email_validator import EmailNotValidError, validate_email
-from app.mailing_jobs import enqueue_mailing_batch
+from app.mailing_jobs import cache_recipients, enqueue_mailing_batch
 
 roles_bp = Blueprint("roles", __name__, url_prefix="/admin")
 
@@ -224,8 +224,11 @@ def mailing():
         if batch_id:
             batch = models.MailingBatch.query.get(int(batch_id))
             if batch:
-                enqueue_mailing_batch(batch.id)
-                flash("Wysyłka została ponownie zaplanowana.", "success")
+                enqueue_mailing_batch(batch.id, recipient_cache_key=batch.recipient_cache_key)
+                if batch.recipient_cache_key:
+                    flash("Wysyłka została ponownie zaplanowana.", "success")
+                else:
+                    flash("Brak zapisanej listy odbiorców. Wgraj plik ponownie.", "danger")
         return redirect(url_for("roles.mailing"))
 
     if request.method == "POST":
@@ -309,10 +312,12 @@ def mailing():
             flash("Plik nie zawiera poprawnych adresów e-mail.", "danger")
             return redirect(url_for("roles.mailing"))
 
+        recipient_cache_key = cache_recipients(emails)
         batch = models.MailingBatch(
             template_type_id=template_type.id if template_type else None,
             template_id=template_id,
             template_data=json.dumps(template_data, ensure_ascii=False) if template_data else None,
+            recipient_cache_key=recipient_cache_key,
             visible_to_email=visible_to_email,
             visible_to_name=visible_to_name,
             send_at=send_at,
@@ -325,7 +330,9 @@ def mailing():
         db.session.add(batch)
         db.session.commit()
 
-        enqueue_mailing_batch(batch.id)
+        enqueue_mailing_batch(batch.id, recipient_cache_key=recipient_cache_key)
+        if os.path.exists(stored_path):
+            os.remove(stored_path)
         flash("Wysyłka została zaplanowana.", "success")
         return redirect(url_for("roles.mailing"))
 

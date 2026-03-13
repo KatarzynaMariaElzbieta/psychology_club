@@ -114,6 +114,7 @@ class MailingBatch(db.Model):
     template_type_id = db.Column(db.Integer, db.ForeignKey("mailing_template_type.id"), nullable=True)
     template_id = db.Column(db.String(120), nullable=False)
     template_data = db.Column(db.Text, nullable=True)
+    recipient_cache_key = db.Column(db.String(255), nullable=True)
     visible_to_email = db.Column(db.String(255), nullable=False)
     visible_to_name = db.Column(db.String(120), nullable=True)
     send_at = db.Column(db.DateTime, nullable=False)
