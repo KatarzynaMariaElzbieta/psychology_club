@@ -82,6 +82,7 @@ def create_app():
     app.config["MAILERSEND_API_TOKEN"] = os.getenv("MAILERSEND_API_TOKEN", "")
     app.config["MAILERSEND_API_URL"] = os.getenv("MAILERSEND_API_URL")
     app.config["MAILERSEND_BATCH_SIZE"] = _env_int("MAILERSEND_BATCH_SIZE", 10)
+    app.config["MAILERSEND_DAILY_LIMIT"] = _env_int("MAILERSEND_DAILY_LIMIT", 100)
     app.config["REDIS_URL"] = os.getenv("REDIS_URL")
 
     sender_name, sender_email = parseaddr(app.config["MAIL_DEFAULT_SENDER"] or "")

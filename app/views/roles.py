@@ -3,7 +3,8 @@ import os
 import uuid
 from zoneinfo import ZoneInfo
 
-from datetime import datetime
+from datetime import datetime, time
+from sqlalchemy import func
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_security import SQLAlchemyUserDatastore, hash_password, roles_accepted
 from werkzeug.utils import secure_filename
@@ -219,6 +220,7 @@ def downloads():
 @roles_accepted("admin")
 def mailing():
     warsaw_tz = ZoneInfo("Europe/Warsaw")
+    utc_tz = ZoneInfo("UTC")
     if request.method == "POST" and request.form.get("action") == "retry":
         batch_id = request.form.get("batch_id")
         if batch_id:
@@ -274,7 +276,7 @@ def mailing():
         try:
             if send_at_raw:
                 local_dt = datetime.fromisoformat(send_at_raw).replace(tzinfo=warsaw_tz)
-                send_at = local_dt.astimezone(ZoneInfo("UTC")).replace(tzinfo=None)
+                send_at = local_dt.astimezone(utc_tz).replace(tzinfo=None)
             else:
                 send_at = datetime.utcnow()
         except ValueError:
@@ -312,6 +314,27 @@ def mailing():
             flash("Plik nie zawiera poprawnych adresów e-mail.", "danger")
             return redirect(url_for("roles.mailing"))
 
+        local_send_at = send_at.replace(tzinfo=utc_tz).astimezone(warsaw_tz)
+        day_start_local = datetime.combine(local_send_at.date(), time.min, tzinfo=warsaw_tz)
+        day_end_local = datetime.combine(local_send_at.date(), time.max, tzinfo=warsaw_tz)
+        day_start_utc = day_start_local.astimezone(utc_tz).replace(tzinfo=None)
+        day_end_utc = day_end_local.astimezone(utc_tz).replace(tzinfo=None)
+
+        daily_limit = int(current_app.config.get("MAILERSEND_DAILY_LIMIT", 100) or 100)
+        scheduled_total = (
+            db.session.query(func.coalesce(func.sum(models.MailingBatch.total_recipients), 0))
+            .filter(models.MailingBatch.send_at >= day_start_utc, models.MailingBatch.send_at <= day_end_utc)
+            .scalar()
+        )
+        if scheduled_total + len(emails) > daily_limit:
+            if os.path.exists(stored_path):
+                os.remove(stored_path)
+            flash(
+                f"Limit dzienny {daily_limit} został przekroczony (zaplanowano {scheduled_total}).",
+                "danger",
+            )
+            return redirect(url_for("roles.mailing"))
+
         recipient_cache_key = cache_recipients(emails)
         batch = models.MailingBatch(
             template_type_id=template_type.id if template_type else None,
@@ -336,23 +359,14 @@ def mailing():
         flash("Wysyłka została zaplanowana.", "success")
         return redirect(url_for("roles.mailing"))
 
-    if request.method == "POST" and request.form.get("action") == "retry":
-        batch_id = request.form.get("batch_id")
-        if batch_id:
-            batch = models.MailingBatch.query.get(int(batch_id))
-            if batch:
-                enqueue_mailing_batch(batch.id)
-                flash("Wysyłka została ponownie zaplanowana.", "success")
-        return redirect(url_for("roles.mailing"))
-
     batches = models.MailingBatch.query.order_by(models.MailingBatch.created_at.desc()).all()
     default_visible = current_app.config.get("MAIL_DEFAULT_SENDER_EMAIL", "")
     default_name = current_app.config.get("MAIL_DEFAULT_SENDER_NAME", "")
     for batch in batches:
         if batch.created_at:
-            batch.created_at = batch.created_at.replace(tzinfo=ZoneInfo("UTC")).astimezone(warsaw_tz)
+            batch.created_at = batch.created_at.replace(tzinfo=utc_tz).astimezone(warsaw_tz)
         if batch.send_at:
-            batch.send_at = batch.send_at.replace(tzinfo=ZoneInfo("UTC")).astimezone(warsaw_tz)
+            batch.send_at = batch.send_at.replace(tzinfo=utc_tz).astimezone(warsaw_tz)
     template_types = models.MailingTemplateType.query.order_by(models.MailingTemplateType.name.asc()).all()
     selected_type = None
     selected_fields = []

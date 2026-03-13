@@ -1,9 +1,11 @@
 import json
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
 
 from flask import current_app
+from sqlalchemy import func
 
 from app import create_app
 from app.extensions import db
@@ -80,6 +82,28 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
     if not emails:
         batch.status = "failed"
         batch.last_error = "Brak poprawnych adresów e-mail"
+        db.session.commit()
+        return
+
+    warsaw_tz = ZoneInfo("Europe/Warsaw")
+    utc_tz = ZoneInfo("UTC")
+    local_send_at = batch.send_at.replace(tzinfo=utc_tz).astimezone(warsaw_tz)
+    day_start_local = datetime.combine(local_send_at.date(), time.min, tzinfo=warsaw_tz)
+    day_end_local = datetime.combine(local_send_at.date(), time.max, tzinfo=warsaw_tz)
+    day_start_utc = day_start_local.astimezone(utc_tz).replace(tzinfo=None)
+    day_end_utc = day_end_local.astimezone(utc_tz).replace(tzinfo=None)
+    daily_limit = int(current_app.config.get("MAILERSEND_DAILY_LIMIT", 100) or 100)
+    already_sent = (
+        db.session.query(func.coalesce(func.sum(MailingBatch.sent_count), 0))
+        .filter(MailingBatch.send_at >= day_start_utc, MailingBatch.send_at <= day_end_utc)
+        .scalar()
+    )
+    if already_sent + len(emails) > daily_limit:
+        batch.status = "failed"
+        batch.last_error = (
+            f"Limit dzienny {daily_limit} przekroczony "
+            f"(wysłano {already_sent}, planowane {len(emails)})"
+        )
         db.session.commit()
         return
 

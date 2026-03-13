@@ -27,7 +27,14 @@ def send_template_email(
         builder = builder.to_many([{"email": visible_to["email"]}])
 
     if bcc_list:
-        builder = builder.bcc_many(bcc_list)
+        for recipient in bcc_list:
+            email = recipient.get("email")
+            name = recipient.get("name")
+            if email:
+                if name:
+                    builder = builder.bcc(email, name)
+                else:
+                    builder = builder.bcc(email)
 
     if template_data:
         personalization = []
