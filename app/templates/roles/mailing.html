@@ -109,6 +109,7 @@
               <th>Odbiorcy</th>
               <th>Status</th>
               <th>Plik</th>
+              <th>Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -120,10 +121,21 @@
                 <td>{{ batch.sent_count }}/{{ batch.total_recipients }}</td>
                 <td>{{ batch.status }}</td>
                 <td>{{ batch.original_name }}</td>
+                <td>
+                  {% if batch.status in ['queued', 'failed', 'partial', 'scheduled'] %}
+                    <form method="post">
+                      <input type="hidden" name="action" value="retry">
+                      <input type="hidden" name="batch_id" value="{{ batch.id }}">
+                      <button class="admin-btn" type="submit">Ponów</button>
+                    </form>
+                  {% else %}
+                    <span class="admin-muted">—</span>
+                  {% endif %}
+                </td>
               </tr>
               {% if batch.last_error %}
                 <tr>
-                  <td colspan="6" class="admin-muted">Błąd: {{ batch.last_error }}</td>
+                  <td colspan="7" class="admin-muted">Błąd: {{ batch.last_error }}</td>
                 </tr>
               {% endif %}
             {% endfor %}

@@ -217,6 +217,15 @@ def downloads():
 @roles_bp.route("/mailing", methods=["GET", "POST"])
 @roles_accepted("admin")
 def mailing():
+    if request.method == "POST" and request.form.get("action") == "retry":
+        batch_id = request.form.get("batch_id")
+        if batch_id:
+            batch = models.MailingBatch.query.get(int(batch_id))
+            if batch:
+                enqueue_mailing_batch(batch.id)
+                flash("Wysyłka została ponownie zaplanowana.", "success")
+        return redirect(url_for("roles.mailing"))
+
     if request.method == "POST":
         template_type_id = request.form.get("template_type_id")
         template_type = None
@@ -312,6 +321,15 @@ def mailing():
 
         enqueue_mailing_batch(batch.id)
         flash("Wysyłka została zaplanowana.", "success")
+        return redirect(url_for("roles.mailing"))
+
+    if request.method == "POST" and request.form.get("action") == "retry":
+        batch_id = request.form.get("batch_id")
+        if batch_id:
+            batch = models.MailingBatch.query.get(int(batch_id))
+            if batch:
+                enqueue_mailing_batch(batch.id)
+                flash("Wysyłka została ponownie zaplanowana.", "success")
         return redirect(url_for("roles.mailing"))
 
     batches = models.MailingBatch.query.order_by(models.MailingBatch.created_at.desc()).all()
