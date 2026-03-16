@@ -1,8 +1,8 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, abort, redirect, render_template, send_from_directory
-from flask_security import SQLAlchemyUserDatastore, roles_accepted
+from flask import Flask, abort, redirect, send_from_directory
+from flask_security import SQLAlchemyUserDatastore
 
 from app.cookie_texts import (
     COOKIE_ACCEPT_LABEL,
@@ -16,6 +16,7 @@ from app.cookie_texts import (
 from app.dash_app.pages.avatars import register_avatar_routes
 from app.extensions import db, mail, migrate, security
 from app.security_forms import ClubRegisterForm
+from email.utils import parseaddr
 
 
 def _env_bool(name, default=False):
@@ -79,10 +80,21 @@ def create_app():
     app.config["MAIL_DEFAULT_SENDER"] = os.getenv("MAIL_DEFAULT_SENDER", "")
     app.config["MAIL_TIMEOUT"] = _env_int("MAIL_TIMEOUT", 10)
     app.config["MAILERSEND_API_TOKEN"] = os.getenv("MAILERSEND_API_TOKEN", "")
-    app.config["MAILERSEND_API_URL"] = os.getenv("MAILERSEND_API_URL", "https://api.mailersend.com/v1/email")
+    app.config["MAILERSEND_API_URL"] = os.getenv("MAILERSEND_API_URL")
+    app.config["MAILERSEND_BATCH_SIZE"] = _env_int("MAILERSEND_BATCH_SIZE", 10)
+    app.config["MAILERSEND_DAILY_LIMIT"] = _env_int("MAILERSEND_DAILY_LIMIT", 100)
+    app.config["MAILERSEND_BATCH_DELAY_SECONDS"] = float(os.getenv("MAILERSEND_BATCH_DELAY_SECONDS", "1"))
+    app.config["MAILERSEND_RETRY_MAX"] = _env_int("MAILERSEND_RETRY_MAX", 3)
+    app.config["MAILERSEND_RETRY_BASE_DELAY_SECONDS"] = float(
+        os.getenv("MAILERSEND_RETRY_BASE_DELAY_SECONDS", "1")
+    )
+    app.config["REDIS_URL"] = os.getenv("REDIS_URL")
 
-    # Publiczny host do linków absolutnych (np. reset hasła) ustawiaj świadomie.
-    # Lokalnie lepiej bazować na aktualnym hoście żądania, bez wymuszania SERVER_NAME.
+    sender_name, sender_email = parseaddr(app.config["MAIL_DEFAULT_SENDER"] or "")
+    app.config["MAIL_DEFAULT_SENDER_EMAIL"] = sender_email.strip()
+    app.config["MAIL_DEFAULT_SENDER_NAME"] = sender_name.strip()
+
+
     if _env_bool("USE_SERVER_NAME", False):
         server_name = os.getenv("SERVER_NAME", "").strip()
         if server_name:
@@ -112,7 +124,7 @@ def create_app():
 
     init_dash(app)
 
-    from app.views.roles import roles_bp
+    from app.admin.routes import roles_bp
 
     app.register_blueprint(roles_bp)
 
@@ -136,11 +148,6 @@ def create_app():
             as_attachment=True,
             download_name=file_obj.original_name,
         )
-
-    @app.route("/admin")
-    @roles_accepted("admin")
-    def admin_panel():
-        return render_template("admin/panel.html")
 
     register_avatar_routes(app)
 

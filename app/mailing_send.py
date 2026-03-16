@@ -1,0 +1,83 @@
+import json
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
+
+from flask import current_app
+from mailersend import EmailBuilder, MailerSendClient
+
+
+def send_bulk_template_emails(
+    template_id: str,
+    subject: str,
+    recipients: list[dict],
+    template_data: dict | None = None,
+    reply_to: dict | None = None,
+) -> str | None:
+    """Send a bulk template email and return the bulk identifier if available."""
+    token = current_app.config.get("MAILERSEND_API_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("Brak MAILERSEND_API_TOKEN")
+
+    sender_email = current_app.config.get("MAIL_DEFAULT_SENDER_EMAIL", "").strip()
+    if not sender_email:
+        raise RuntimeError("Brak MAIL_DEFAULT_SENDER_EMAIL")
+
+    sender_name = (current_app.config.get("MAIL_DEFAULT_SENDER_NAME") or "").strip()
+
+    ms = MailerSendClient(api_key=token)
+    email_requests = []
+
+    for recipient in recipients:
+        email = recipient.get("email")
+        name = recipient.get("name")
+        if not email:
+            continue
+        builder = EmailBuilder().from_email(sender_email, sender_name or None)
+        builder = builder.to(email, name)
+        if reply_to and reply_to.get("email"):
+            builder = builder.reply_to(reply_to["email"], reply_to.get("name"))
+        if template_data:
+            builder = builder.personalize(email, **template_data)
+        email_requests.append(builder.subject(subject).template(template_id).build())
+
+    if not email_requests:
+        return None
+
+    response = ms.emails.send_bulk(email_requests)
+
+    if isinstance(response, dict):
+        if response.get("message") not in {None, "Bulk email queued"}:
+            raise RuntimeError(f"MailerSend odpowiedź: {response}")
+        return response.get("bulk_email_id")
+
+    bulk_email_id = getattr(response, "bulk_email_id", None)
+    if bulk_email_id:
+        return bulk_email_id
+    return None
+
+
+def get_bulk_email_status(bulk_email_id: str) -> dict:
+    """Fetch bulk email status details from MailerSend."""
+    token = current_app.config.get("MAILERSEND_API_TOKEN", "").strip()
+    if not token:
+        raise RuntimeError("Brak MAILERSEND_API_TOKEN")
+
+    url = f"https://api.mailersend.com/v1/bulk-email/{bulk_email_id}"
+    req = Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="GET",
+    )
+
+    try:
+        with urlopen(req, timeout=10) as response:
+            payload = response.read().decode("utf-8")
+            return json.loads(payload) if payload else {}
+    except HTTPError as exc:
+        payload = exc.read().decode("utf-8") if exc.fp else ""
+        raise RuntimeError(f"MailerSend HTTP {exc.code}: {payload}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"MailerSend URL error: {exc}") from exc

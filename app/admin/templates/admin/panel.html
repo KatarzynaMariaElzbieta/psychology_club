@@ -3,7 +3,7 @@
 {% block title %}Panel administratora{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('roles.static', filename='css/admin.css') }}">
 
 <div class="admin-page">
   <div class="admin-header">
@@ -25,6 +25,16 @@
     <a class="admin-tile" href="{{ url_for('roles.downloads') }}">
       <h3>Do pobrania</h3>
       <p>Dodawaj i usuwaj pliki udostępniane na stronie „Do pobrania”.</p>
+    </a>
+
+    <a class="admin-tile" href="{{ url_for('roles.mailing') }}">
+      <h3>Mailing wydarzeń</h3>
+      <p>Wgrywaj listy CSV/XLSX i wysyłaj szablony MailerSend.</p>
+    </a>
+
+    <a class="admin-tile" href="{{ url_for('roles.mailing_types') }}">
+      <h3>Typy maili</h3>
+      <p>Ustaw typ maila, ID szablonu i pola do wypełnienia.</p>
     </a>
   </div>
 </div>
