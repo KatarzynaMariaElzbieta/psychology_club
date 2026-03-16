@@ -19,6 +19,7 @@ FAILED_RECIPIENTS_PREFIX = "mailing:failed"
 SENT_RECIPIENTS_PREFIX = "mailing:sent"
 PENDING_BULK_PREFIX = "mailing:bulk:pending"
 BULK_REQUEST_PREFIX = "mailing:bulk"
+DONE_BULK_PREFIX = "mailing:bulk:done"
 
 
 def _get_redis_client():
@@ -55,6 +56,11 @@ def get_pending_bulk_cache_key(batch_id: int) -> str:
 def get_bulk_request_cache_key(bulk_email_id: str) -> str:
     """Build Redis key for a bulk request payload."""
     return f"{BULK_REQUEST_PREFIX}:{bulk_email_id}"
+
+
+def get_bulk_done_cache_key(batch_id: int) -> str:
+    """Build Redis key for processed bulk ids in a batch."""
+    return f"{DONE_BULK_PREFIX}:{batch_id}"
 
 
 def _load_recipients_set(cache_key: str) -> set[str]:
@@ -196,6 +202,47 @@ def cache_bulk_request(bulk_email_id: str, batch_id: int, emails: list[str], att
         )
     except Exception:
         pass
+
+
+def mark_bulk_processed(batch_id: int, bulk_email_id: str) -> bool:
+    """Mark bulk id as processed and return True if it was new."""
+    try:
+        redis_client = _get_redis_client()
+    except Exception:
+        return False
+
+
+def find_batch_id_for_bulk(bulk_email_id: str) -> int | None:
+    """Find batch id for bulk id by scanning pending sets."""
+    try:
+        redis_client = _get_redis_client()
+    except Exception:
+        return None
+    pattern = f"{PENDING_BULK_PREFIX}:*"
+    cursor = 0
+    try:
+        while True:
+            cursor, keys = redis_client.scan(cursor=cursor, match=pattern, count=200)
+            for key in keys or []:
+                try:
+                    if redis_client.sismember(key, bulk_email_id):
+                        key_str = key.decode("utf-8") if isinstance(key, bytes) else str(key)
+                        batch_id_str = key_str.rsplit(":", 1)[-1]
+                        return int(batch_id_str)
+                except Exception:
+                    continue
+            if cursor == 0:
+                break
+    except Exception:
+        return None
+    return None
+    key = get_bulk_done_cache_key(batch_id)
+    try:
+        added = redis_client.sadd(key, bulk_email_id)
+        redis_client.expire(key, RECIPIENTS_CACHE_TTL_SECONDS)
+        return bool(added)
+    except Exception:
+        return False
 
 
 def load_bulk_request(bulk_email_id: str) -> dict | None:
@@ -425,7 +472,13 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
                 if bulk_email_id:
                     cache_bulk_request(bulk_email_id, batch.id, chunk)
                     add_pending_bulk(batch.id, bulk_email_id)
-                    enqueue_bulk_status_check(bulk_email_id, delay_seconds=status_delay_seconds)
+                    enqueue_bulk_status_check(
+                        bulk_email_id,
+                        delay_seconds=status_delay_seconds,
+                        batch_id=batch.id,
+                        emails=chunk,
+                        attempts=0,
+                    )
                 else:
                     failed_emails.extend(chunk)
                 break
@@ -496,7 +549,13 @@ def enqueue_mailing_batch(batch_id: int, recipient_cache_key: str | None = None)
     db.session.commit()
 
 
-def enqueue_bulk_status_check(bulk_email_id: str, delay_seconds: float | None = None) -> None:
+def enqueue_bulk_status_check(
+    bulk_email_id: str,
+    delay_seconds: float | None = None,
+    batch_id: int | None = None,
+    emails: list[str] | None = None,
+    attempts: int = 0,
+) -> None:
     """Enqueue a bulk status check job, optionally delayed."""
     from redis import Redis
     from rq import Queue
@@ -505,16 +564,28 @@ def enqueue_bulk_status_check(bulk_email_id: str, delay_seconds: float | None = 
     queue = Queue("mailing", connection=Redis.from_url(redis_url))
 
     if delay_seconds and delay_seconds > 0:
-        queue.enqueue_in(timedelta(seconds=delay_seconds), check_bulk_email_status, bulk_email_id)
+        queue.enqueue_in(
+            timedelta(seconds=delay_seconds),
+            check_bulk_email_status,
+            bulk_email_id,
+            batch_id,
+            emails,
+            attempts,
+        )
     else:
-        queue.enqueue(check_bulk_email_status, bulk_email_id)
+        queue.enqueue(check_bulk_email_status, bulk_email_id, batch_id, emails, attempts)
 
 
-def check_bulk_email_status(bulk_email_id: str) -> None:
+def check_bulk_email_status(
+    bulk_email_id: str,
+    batch_id: int | None = None,
+    emails: list[str] | None = None,
+    attempts: int = 0,
+) -> None:
     """Job entry point to check a bulk email status."""
     app = create_app()
     with app.app_context():
-        _check_bulk_email_status(bulk_email_id)
+        _check_bulk_email_status(bulk_email_id, batch_id=batch_id, emails=emails, attempts=attempts)
 
 
 def _extract_failed_from_status(emails: list[str], status: dict) -> set[str]:
@@ -560,15 +631,55 @@ def _extract_failed_from_status(emails: list[str], status: dict) -> set[str]:
     return failed
 
 
-def _check_bulk_email_status(bulk_email_id: str) -> None:
-    """Process bulk status and update sent/failed sets and batch status."""
-    payload = load_bulk_request(bulk_email_id)
-    if not payload:
-        return
+def _extract_status_counts(status: dict) -> tuple[int | None, int | None, int | None]:
+    """Extract total/suppressed/validation counts from bulk status payload."""
+    if not isinstance(status, dict):
+        return None, None, None
+    data = status.get("data")
+    if isinstance(data, dict):
+        source = data
+    else:
+        source = status
 
-    batch_id = payload.get("batch_id")
-    emails = payload.get("emails") or []
-    attempts = int(payload.get("attempts") or 0)
+    def _get_int(*keys: str) -> int | None:
+        for key in keys:
+            value = source.get(key)
+            if value is None and key in status:
+                value = status.get(key)
+            if value is None:
+                continue
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    total = _get_int("total_recipients_count", "totalRecipientsCount", "total_recipients")
+    suppressed = _get_int("suppressed_recipients_count", "suppressedRecipientsCount", "suppressed_count")
+    validation = _get_int("validation_errors_count", "validationErrorsCount", "validation_count")
+    return total, suppressed, validation
+
+
+def _check_bulk_email_status(
+    bulk_email_id: str,
+    batch_id: int | None = None,
+    emails: list[str] | None = None,
+    attempts: int = 0,
+) -> None:
+    """Process bulk status and update sent/failed sets and batch status."""
+    payload = None
+    if batch_id is None or emails is None:
+        payload = load_bulk_request(bulk_email_id)
+        if payload:
+            batch_id = payload.get("batch_id")
+            emails = payload.get("emails") or []
+            attempts = int(payload.get("attempts") or 0)
+        else:
+            batch_id = find_batch_id_for_bulk(bulk_email_id)
+            if batch_id is None:
+                return
+            emails = []
+            attempts = 0
 
     batch = MailingBatch.query.get(batch_id) if batch_id else None
     if not batch:
@@ -584,7 +695,13 @@ def _check_bulk_email_status(bulk_email_id: str) -> None:
         attempts += 1
         if attempts <= max_attempts:
             cache_bulk_request(bulk_email_id, batch_id, emails, attempts=attempts)
-            enqueue_bulk_status_check(bulk_email_id, delay_seconds=retry_delay)
+            enqueue_bulk_status_check(
+                bulk_email_id,
+                delay_seconds=retry_delay,
+                batch_id=batch_id,
+                emails=emails,
+                attempts=attempts,
+            )
             return
         batch.last_error = str(exc)
         add_failed_recipients(batch.id, emails)
@@ -605,22 +722,44 @@ def _check_bulk_email_status(bulk_email_id: str) -> None:
         attempts += 1
         if attempts <= max_attempts:
             cache_bulk_request(bulk_email_id, batch_id, emails, attempts=attempts)
-            enqueue_bulk_status_check(bulk_email_id, delay_seconds=retry_delay)
+            enqueue_bulk_status_check(
+                bulk_email_id,
+                delay_seconds=retry_delay,
+                batch_id=batch_id,
+                emails=emails,
+                attempts=attempts,
+            )
             return
 
-    failed = _extract_failed_from_status(emails, status)
-    failed_list = [email for email in emails if email in failed]
-    sent_list = [email for email in emails if email not in failed]
+    failed_list: list[str] = []
+    sent_list: list[str] = []
+    updated_from_counts = False
+    if emails:
+        failed = _extract_failed_from_status(emails, status)
+        failed_list = [email for email in emails if email in failed]
+        sent_list = [email for email in emails if email not in failed]
 
-    if failed_list:
-        add_failed_recipients(batch.id, failed_list)
-    if sent_list:
-        add_sent_recipients(batch.id, sent_list)
-        remove_failed_recipients(batch.id, sent_list)
+        if failed_list:
+            add_failed_recipients(batch.id, failed_list)
+        if sent_list:
+            add_sent_recipients(batch.id, sent_list)
+            remove_failed_recipients(batch.id, sent_list)
+    else:
+        total, suppressed, validation = _extract_status_counts(status)
+        if total is not None:
+            failed_count = (suppressed or 0) + (validation or 0)
+            sent_count = max(total - failed_count, 0)
+            if mark_bulk_processed(batch.id, bulk_email_id):
+                batch.sent_count += sent_count
+                batch.failed_count += failed_count
+                updated_from_counts = True
+        else:
+            batch.last_error = "Brak danych statusu bulk do zliczenia odbiorców."
 
     remove_pending_bulk(batch.id, bulk_email_id)
     delete_bulk_request(bulk_email_id)
-    refresh_batch_counts(batch)
+    if not updated_from_counts:
+        refresh_batch_counts(batch)
 
     if not has_pending_bulk(batch.id):
         if batch.failed_count:
