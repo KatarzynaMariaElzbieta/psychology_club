@@ -13,7 +13,16 @@ from app import models
 from app.extensions import db
 from app.mailing_import import parse_recipient_file
 from email_validator import EmailNotValidError, validate_email
-from app.mailing_jobs import cache_recipients, enqueue_mailing_batch
+from app.mailing_jobs import (
+    cache_recipients,
+    delete_mailing_cache,
+    enqueue_mailing_batch,
+    get_failed_recipients_cache_key,
+    get_pending_bulk_cache_key,
+    get_sent_recipients_cache_key,
+    load_failed_recipients,
+    has_pending_bulk,
+)
 
 roles_bp = Blueprint("roles", __name__, url_prefix="/admin")
 
@@ -221,16 +230,39 @@ def downloads():
 def mailing():
     warsaw_tz = ZoneInfo("Europe/Warsaw")
     utc_tz = ZoneInfo("UTC")
-    if request.method == "POST" and request.form.get("action") == "retry":
+    if request.method == "POST" and request.form.get("action") in {"retry", "delete_failed"}:
         batch_id = request.form.get("batch_id")
         if batch_id:
             batch = models.MailingBatch.query.get(int(batch_id))
-            if batch:
-                enqueue_mailing_batch(batch.id, recipient_cache_key=batch.recipient_cache_key)
-                if batch.recipient_cache_key:
-                    flash("Wysyłka została ponownie zaplanowana.", "success")
+            if batch and request.form.get("action") == "retry":
+                if has_pending_bulk(batch.id):
+                    flash("Wysyłka jest w toku. Poczekaj na aktualizację statusu.", "warning")
                 else:
-                    flash("Brak zapisanej listy odbiorców. Wgraj plik ponownie.", "danger")
+                    failed_key = get_failed_recipients_cache_key(batch.id)
+                    failed_list = load_failed_recipients(batch.id)
+                    retry_cache_key = failed_key if failed_list else batch.recipient_cache_key
+                    enqueue_mailing_batch(batch.id, recipient_cache_key=retry_cache_key)
+                    if retry_cache_key:
+                        flash("Wysyłka została ponownie zaplanowana.", "success")
+                    else:
+                        flash("Brak zapisanej listy odbiorców. Wgraj plik ponownie.", "danger")
+            elif batch and request.form.get("action") == "delete_failed":
+                if batch.status in {"failed", "partial"}:
+                    failed_key = get_failed_recipients_cache_key(batch.id)
+                    sent_key = get_sent_recipients_cache_key(batch.id)
+                    pending_key = get_pending_bulk_cache_key(batch.id)
+                    delete_mailing_cache(batch.recipient_cache_key, failed_key, sent_key, pending_key)
+                    stored_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing", batch.stored_name)
+                    if os.path.exists(stored_path):
+                        try:
+                            os.remove(stored_path)
+                        except OSError:
+                            pass
+                    db.session.delete(batch)
+                    db.session.commit()
+                    flash("Nieudana wysyłka została usunięta.", "success")
+                else:
+                    flash("Możesz usuwać tylko nieudane wysyłki.", "danger")
         return redirect(url_for("roles.mailing"))
 
     if request.method == "POST":

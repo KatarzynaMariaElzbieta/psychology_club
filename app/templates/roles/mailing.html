@@ -107,6 +107,10 @@
       <h2>Historia wysyłek</h2>
     </div>
     <div class="admin-card__body">
+      <p class="admin-muted">
+        Liczba wysłanych wiadomości pojawia się po zakończeniu weryfikacji statusu bulk
+        (zwykle po kilkunastu–kilkudziesięciu sekundach).
+      </p>
       {% if batches %}
         <table class="admin-table">
           <thead>
@@ -131,12 +135,20 @@
                 <td>{{ batch.original_name }}</td>
                 <td>
                   {% if batch.status in ['queued', 'failed', 'partial', 'scheduled'] %}
-                    <form method="post">
+                    <form method="post" style="display: inline-block; margin-right: 0.5rem;">
                       <input type="hidden" name="action" value="retry">
                       <input type="hidden" name="batch_id" value="{{ batch.id }}">
                       <button class="admin-btn" type="submit">Ponów</button>
                     </form>
-                  {% else %}
+                  {% endif %}
+                  {% if batch.status in ['failed', 'partial'] %}
+                    <form method="post" style="display: inline-block;">
+                      <input type="hidden" name="action" value="delete_failed">
+                      <input type="hidden" name="batch_id" value="{{ batch.id }}">
+                      <button class="admin-btn" type="submit">Usuń nieudaną</button>
+                    </form>
+                  {% endif %}
+                  {% if batch.status not in ['queued', 'failed', 'partial', 'scheduled'] %}
                     <span class="admin-muted">—</span>
                   {% endif %}
                 </td>
