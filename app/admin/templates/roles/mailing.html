@@ -46,21 +46,17 @@
             <label for="template_id">MailerSend template ID</label>
             <input type="text" id="template_id" name="template_id" placeholder="np. x2p0347jv834zdrn" required>
           </div>
-          <div class="admin-field">
-            <label for="subject">Temat wiadomości</label>
-            <input type="text" id="subject" name="subject" required>
-          </div>
         {% endif %}
+        <div class="admin-field">
+          <label for="subject">Temat wiadomości</label>
+          <input type="text" id="subject" name="subject" required>
+        </div>
         {% if selected_fields %}
           <div class="admin-card" style="margin: 1rem 0;">
             <div class="admin-card__head">
               <h2>Dane do szablonu</h2>
             </div>
             <div class="admin-card__body">
-              <div class="admin-field">
-                <label for="subject">Temat wiadomości</label>
-                <input type="text" id="subject" name="subject" required>
-              </div>
               {% for field in selected_fields %}
                 <div class="admin-field">
                   <label for="tpl_{{ field.key }}">{{ field.label }}</label>
