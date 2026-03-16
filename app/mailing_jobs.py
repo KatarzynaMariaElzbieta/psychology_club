@@ -180,6 +180,26 @@ def has_pending_bulk(batch_id: int) -> bool:
         return False
 
 
+def list_pending_bulk(batch_id: int) -> list[str]:
+    """Return pending bulk ids for a batch."""
+    try:
+        redis_client = _get_redis_client()
+    except Exception:
+        return []
+    key = get_pending_bulk_cache_key(batch_id)
+    try:
+        bulk_ids = redis_client.smembers(key)
+    except Exception:
+        return []
+    result: list[str] = []
+    for bulk_id in bulk_ids or []:
+        if isinstance(bulk_id, bytes):
+            result.append(bulk_id.decode("utf-8", errors="ignore"))
+        else:
+            result.append(str(bulk_id))
+    return result
+
+
 def cache_bulk_request(bulk_email_id: str, batch_id: int, emails: list[str], attempts: int = 0) -> None:
     """Cache bulk request metadata used to poll its status."""
     if not bulk_email_id:
@@ -675,9 +695,10 @@ def _check_bulk_email_status(
             emails = payload.get("emails") or []
             attempts = int(payload.get("attempts") or 0)
         else:
-            batch_id = find_batch_id_for_bulk(bulk_email_id)
             if batch_id is None:
-                return
+                batch_id = find_batch_id_for_bulk(bulk_email_id)
+                if batch_id is None:
+                    return
             emails = []
             attempts = 0
 
