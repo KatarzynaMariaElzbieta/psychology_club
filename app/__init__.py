@@ -1,8 +1,8 @@
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, abort, redirect, render_template, send_from_directory
-from flask_security import SQLAlchemyUserDatastore, roles_accepted
+from flask import Flask, abort, redirect, send_from_directory
+from flask_security import SQLAlchemyUserDatastore
 
 from app.cookie_texts import (
     COOKIE_ACCEPT_LABEL,
@@ -94,8 +94,7 @@ def create_app():
     app.config["MAIL_DEFAULT_SENDER_EMAIL"] = sender_email.strip()
     app.config["MAIL_DEFAULT_SENDER_NAME"] = sender_name.strip()
 
-    # Publiczny host do linków absolutnych (np. reset hasła) ustawiaj świadomie.
-    # Lokalnie lepiej bazować na aktualnym hoście żądania, bez wymuszania SERVER_NAME.
+
     if _env_bool("USE_SERVER_NAME", False):
         server_name = os.getenv("SERVER_NAME", "").strip()
         if server_name:
@@ -125,7 +124,7 @@ def create_app():
 
     init_dash(app)
 
-    from app.views.roles import roles_bp
+    from app.admin.routes import roles_bp
 
     app.register_blueprint(roles_bp)
 
@@ -149,11 +148,6 @@ def create_app():
             as_attachment=True,
             download_name=file_obj.original_name,
         )
-
-    @app.route("/admin")
-    @roles_accepted("admin")
-    def admin_panel():
-        return render_template("admin/panel.html")
 
     register_avatar_routes(app)
 

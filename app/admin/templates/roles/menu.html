@@ -3,7 +3,7 @@
 {% block title %}Role – Panel administracyjny{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link rel="stylesheet" href="{{ url_for('roles.static', filename='css/admin.css') }}">
 
 <div class="admin-page">
   <div class="admin-header">
@@ -15,7 +15,7 @@
     <div class="admin-card__head">
       <h2>Lista ról</h2>
       <div class="admin-actions">
-        <a class="admin-link" href="{{ url_for('admin_panel') }}">Wróć do panelu admina</a>
+        <a class="admin-link" href="{{ url_for('roles.admin_panel') }}">Wróć do panelu admina</a>
         <a class="admin-btn" href="{{ url_for('roles.create_role') }}">+ Dodaj rolę</a>
       </div>
     </div>

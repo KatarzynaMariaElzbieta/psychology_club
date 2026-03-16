@@ -24,9 +24,22 @@ from app.mailing_jobs import (
     has_pending_bulk,
 )
 
-roles_bp = Blueprint("roles", __name__, url_prefix="/admin")
+roles_bp = Blueprint(
+    "roles",
+    __name__,
+    url_prefix="/admin",
+    template_folder="templates",
+    static_folder="static",
+    static_url_path="/static",
+)
 
 user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
+
+
+@roles_bp.route("/")
+@roles_accepted("admin")
+def admin_panel():
+    return render_template("admin/panel.html")
 
 
 # --- Lista ról ---
