@@ -23,25 +23,28 @@
 
   <div class="admin-card">
     <div class="admin-card__head">
-      <h2>Nowy typ</h2>
+      <h2>{% if edit_type %}Edytuj typ{% else %}Nowy typ{% endif %}</h2>
     </div>
     <div class="admin-card__body">
-      <form method="post">
+      <form method="post" action="{% if edit_type %}{{ url_for('roles.edit_mailing_type', type_id=edit_type.id) }}{% else %}{{ url_for('roles.mailing_types') }}{% endif %}">
         <div class="admin-field">
           <label for="name">Nazwa typu</label>
-          <input type="text" id="name" name="name" required>
+          <input type="text" id="name" name="name" value="{{ edit_type.name if edit_type else '' }}" required>
         </div>
         <div class="admin-field">
           <label for="template_id">MailerSend template ID</label>
-          <input type="text" id="template_id" name="template_id" required>
+          <input type="text" id="template_id" name="template_id" value="{{ edit_type.template_id if edit_type else '' }}" required>
         </div>
         <div class="admin-field">
           <label for="fields">Pola szablonu (po 1 w linii)</label>
-          <textarea id="fields" name="fields" placeholder="event_name|Nazwa wydarzenia&#10;time|Godzina&#10;place|Miejsce"></textarea>
+          <textarea id="fields" name="fields" placeholder="event_name|Nazwa wydarzenia&#10;time|Godzina&#10;place|Miejsce">{{ edit_type.fields if edit_type and edit_type.fields else '' }}</textarea>
           <div class="admin-muted">Format: klucz|etykieta. Jeśli brak etykiety, użyjemy klucza.</div>
         </div>
         <div class="admin-actions">
-          <button class="admin-btn" type="submit">Zapisz typ</button>
+          <button class="admin-btn" type="submit">{% if edit_type %}Zapisz zmiany{% else %}Zapisz typ{% endif %}</button>
+          {% if edit_type %}
+            <a class="admin-link" href="{{ url_for('roles.mailing_types') }}">Anuluj edycję</a>
+          {% endif %}
         </div>
       </form>
     </div>
@@ -75,9 +78,12 @@
                   {% endif %}
                 </td>
                 <td>
-                  <form method="post" action="{{ url_for('roles.delete_mailing_type', type_id=t.id) }}">
-                    <button class="admin-btn" type="submit">Usuń</button>
-                  </form>
+                  <div class="admin-actions">
+                    <a class="admin-btn" href="{{ url_for('roles.mailing_types', edit=t.id) }}">Edytuj</a>
+                    <form method="post" action="{{ url_for('roles.delete_mailing_type', type_id=t.id) }}">
+                      <button class="admin-btn" type="submit">Usuń</button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             {% endfor %}

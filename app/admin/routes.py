@@ -472,8 +472,45 @@ def mailing_types():
         flash("Typ maila został zapisany.", "success")
         return redirect(url_for("roles.mailing_types"))
 
+    edit_id = request.args.get("edit")
+    edit_type = None
+    if edit_id:
+        edit_type = models.MailingTemplateType.query.get(int(edit_id))
     template_types = models.MailingTemplateType.query.order_by(models.MailingTemplateType.created_at.desc()).all()
-    return render_template("roles/mailing_types.html", template_types=template_types)
+    return render_template(
+        "roles/mailing_types.html",
+        template_types=template_types,
+        edit_type=edit_type,
+    )
+
+
+@roles_bp.route("/mailing-types/<int:type_id>/edit", methods=["POST"])
+@roles_accepted("admin")
+def edit_mailing_type(type_id: int):
+    template_type = models.MailingTemplateType.query.get(type_id)
+    if not template_type:
+        flash("Typ maila nie istnieje.", "danger")
+        return redirect(url_for("roles.mailing_types"))
+
+    name = (request.form.get("name") or "").strip()
+    template_id = (request.form.get("template_id") or "").strip()
+    fields = (request.form.get("fields") or "").strip() or None
+
+    if not name or not template_id:
+        flash("Nazwa i ID szablonu są wymagane.", "danger")
+        return redirect(url_for("roles.mailing_types", edit=type_id))
+
+    existing = models.MailingTemplateType.query.filter_by(name=name).first()
+    if existing and existing.id != template_type.id:
+        flash("Taki typ maila już istnieje.", "danger")
+        return redirect(url_for("roles.mailing_types", edit=type_id))
+
+    template_type.name = name
+    template_type.template_id = template_id
+    template_type.fields = fields
+    db.session.commit()
+    flash("Typ maila został zaktualizowany.", "success")
+    return redirect(url_for("roles.mailing_types"))
 
 
 @roles_bp.route("/mailing-types/<int:type_id>/delete", methods=["POST"])
