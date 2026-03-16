@@ -16,11 +16,13 @@ from email_validator import EmailNotValidError, validate_email
 from app.mailing_jobs import (
     cache_recipients,
     delete_mailing_cache,
+    enqueue_bulk_status_check,
     enqueue_mailing_batch,
     get_failed_recipients_cache_key,
     get_pending_bulk_cache_key,
     get_sent_recipients_cache_key,
     load_failed_recipients,
+    list_pending_bulk,
     has_pending_bulk,
 )
 
@@ -243,7 +245,12 @@ def downloads():
 def mailing():
     warsaw_tz = ZoneInfo("Europe/Warsaw")
     utc_tz = ZoneInfo("UTC")
-    if request.method == "POST" and request.form.get("action") in {"retry", "delete_failed"}:
+    if request.method == "POST" and request.form.get("action") in {
+        "retry",
+        "delete_failed",
+        "refresh_status",
+        "mark_sent",
+    }:
         batch_id = request.form.get("batch_id")
         if batch_id:
             batch = models.MailingBatch.query.get(int(batch_id))
@@ -276,6 +283,27 @@ def mailing():
                     flash("Nieudana wysyłka została usunięta.", "success")
                 else:
                     flash("Możesz usuwać tylko nieudane wysyłki.", "danger")
+            elif batch and request.form.get("action") == "refresh_status":
+                pending_ids = list_pending_bulk(batch.id)
+                if not pending_ids:
+                    flash("Brak oczekujących statusów bulk do odświeżenia.", "warning")
+                else:
+                    for bulk_id in pending_ids:
+                        enqueue_bulk_status_check(
+                            bulk_id,
+                            delay_seconds=0,
+                            batch_id=batch.id,
+                            emails=None,
+                            attempts=0,
+                        )
+                    flash("Odświeżanie statusów zostało zlecone.", "success")
+            elif batch and request.form.get("action") == "mark_sent":
+                batch.sent_count = batch.total_recipients
+                batch.failed_count = 0
+                batch.status = "sent"
+                batch.last_error = None
+                db.session.commit()
+                flash("Wysyłka została oznaczona jako wysłana.", "success")
         return redirect(url_for("roles.mailing"))
 
     if request.method == "POST":

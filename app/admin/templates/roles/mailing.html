@@ -137,6 +137,18 @@
                       <button class="admin-btn" type="submit">Ponów</button>
                     </form>
                   {% endif %}
+                  {% if batch.status == 'sending' %}
+                    <form method="post" style="display: inline-block; margin-right: 0.5rem;">
+                      <input type="hidden" name="action" value="refresh_status">
+                      <input type="hidden" name="batch_id" value="{{ batch.id }}">
+                      <button class="admin-btn" type="submit">Odśwież status</button>
+                    </form>
+                    <form method="post" style="display: inline-block; margin-right: 0.5rem;">
+                      <input type="hidden" name="action" value="mark_sent">
+                      <input type="hidden" name="batch_id" value="{{ batch.id }}">
+                      <button class="admin-btn" type="submit">Oznacz jako wysłane</button>
+                    </form>
+                  {% endif %}
                   {% if batch.status in ['failed', 'partial'] %}
                     <form method="post" style="display: inline-block;">
                       <input type="hidden" name="action" value="delete_failed">
@@ -144,7 +156,7 @@
                       <button class="admin-btn" type="submit">Usuń nieudaną</button>
                     </form>
                   {% endif %}
-                  {% if batch.status not in ['queued', 'failed', 'partial', 'scheduled'] %}
+                  {% if batch.status not in ['queued', 'failed', 'partial', 'scheduled', 'sending'] %}
                     <span class="admin-muted">—</span>
                   {% endif %}
                 </td>
