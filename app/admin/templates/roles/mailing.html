@@ -161,6 +161,46 @@
                   {% endif %}
                 </td>
               </tr>
+              {% if batch.bulks %}
+                <tr>
+                  <td colspan="7">
+                    <details>
+                      <summary class="admin-muted" style="cursor: pointer;">Paczki bulk ({{ batch.bulks|length }})</summary>
+                      <table class="admin-table" style="margin-top: 0.75rem;">
+                        <thead>
+                          <tr>
+                            <th>bulk_id</th>
+                            <th>Status</th>
+                            <th>Wysłane</th>
+                            <th>Błędy</th>
+                            <th>Ostatni błąd</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for bulk in batch.bulks %}
+                            <tr>
+                              <td>{{ bulk.bulk_email_id }}</td>
+                              <td>{{ bulk.status }}</td>
+                              <td>{{ bulk.sent_count }}/{{ bulk.total_recipients }}</td>
+                              <td>{{ bulk.failed_count }}</td>
+                              <td>
+                                {% if bulk.last_error %}
+                                  <details>
+                                    <summary class="admin-muted" style="cursor: pointer;">Pokaż błąd</summary>
+                                    <div class="admin-muted" style="margin-top: 0.5rem;">{{ bulk.last_error }}</div>
+                                  </details>
+                                {% else %}
+                                  <span class="admin-muted">—</span>
+                                {% endif %}
+                              </td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </details>
+                  </td>
+                </tr>
+              {% endif %}
               {% if batch.last_error %}
                 <tr>
                   <td colspan="7" class="admin-muted">Błąd: {{ batch.last_error }}</td>

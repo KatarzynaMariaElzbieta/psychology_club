@@ -133,6 +133,29 @@ class MailingBatch(db.Model):
         return f"<MailingBatch {self.id} {self.template_id} {self.status}>"
 
 
+class MailingBulk(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    batch_id = db.Column(db.Integer, db.ForeignKey("mailing_batch.id"), nullable=False, index=True)
+    bulk_email_id = db.Column(db.String(120), nullable=False, unique=True)
+    status = db.Column(db.String(24), nullable=False, default="queued")
+    state = db.Column(db.String(24), nullable=True)
+    total_recipients = db.Column(db.Integer, nullable=False, default=0)
+    sent_count = db.Column(db.Integer, nullable=False, default=0)
+    failed_count = db.Column(db.Integer, nullable=False, default=0)
+    last_error = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_checked_at = db.Column(db.DateTime, nullable=True)
+
+    batch = db.relationship(
+        "MailingBatch",
+        backref=db.backref("bulks", lazy=True, cascade="all, delete-orphan"),
+    )
+
+    def __repr__(self):
+        return f"<MailingBulk {self.bulk_email_id} batch={self.batch_id} status={self.status}>"
+
+
 class MailingTemplateType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False, unique=True)
