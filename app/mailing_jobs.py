@@ -500,16 +500,16 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
     day_start_utc = day_start_local.astimezone(utc_tz).replace(tzinfo=None)
     day_end_utc = day_end_local.astimezone(utc_tz).replace(tzinfo=None)
     daily_limit = int(current_app.config.get("MAILERSEND_DAILY_LIMIT", 100) or 100)
-    already_sent = (
-        db.session.query(func.coalesce(func.sum(MailingBatch.sent_count), 0))
+    planned_total = (
+        db.session.query(func.coalesce(func.sum(MailingBatch.total_recipients), 0))
         .filter(MailingBatch.send_at >= day_start_utc, MailingBatch.send_at <= day_end_utc)
         .scalar()
     )
-    if already_sent + len(emails) > daily_limit:
+    if planned_total + len(emails) > daily_limit:
         batch.status = "failed"
         batch.last_error = (
             f"Limit dzienny {daily_limit} przekroczony "
-            f"(wysłano {already_sent}, planowane {len(emails)})"
+            f"(zaplanowano {planned_total}, dodatkowe {len(emails)})"
         )
         db.session.commit()
         return
@@ -836,6 +836,18 @@ def _check_bulk_email_status(
                 attempts=attempts,
             )
             return
+        bulk.status = "error"
+        bulk.last_error = (
+            "Nie udało się pobrać końcowego statusu bulk "
+            f"po {max_attempts} próbach (ostatni stan: {state})."
+        )
+        bulk.last_checked_at = datetime.utcnow()
+        batch.last_error = bulk.last_error
+        remove_pending_bulk(batch.id, bulk_email_id)
+        delete_bulk_request(bulk_email_id)
+        refresh_batch_from_db(batch)
+        db.session.commit()
+        return
 
     failed_list: list[str] = []
     sent_list: list[str] = []
