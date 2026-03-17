@@ -14,6 +14,9 @@ def send_bulk_template_emails(
     reply_to: dict | None = None,
 ) -> str | None:
     """Send a bulk template email and return the bulk identifier if available."""
+    subject = (subject or "").strip()
+    if not subject:
+        raise RuntimeError("Brak tematu wiadomości.")
     token = current_app.config.get("MAILERSEND_API_TOKEN", "").strip()
     if not token:
         raise RuntimeError("Brak MAILERSEND_API_TOKEN")
@@ -78,6 +81,23 @@ def get_bulk_email_status(bulk_email_id: str) -> dict:
             return json.loads(payload) if payload else {}
     except HTTPError as exc:
         payload = exc.read().decode("utf-8") if exc.fp else ""
+        if exc.code == 403 and payload:
+            try:
+                parsed = json.loads(payload)
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, dict):
+                code = parsed.get("code")
+                error = parsed.get("error") if isinstance(parsed.get("error"), dict) else {}
+                error_code = error.get("code")
+                if str(code or error_code) == "1010":
+                    # Send-only token: allow flow to proceed without status details.
+                    return {
+                        "data": {"state": "completed"},
+                        "skipped_status": True,
+                        "skipped_reason": "insufficient_permissions",
+                        "raw_error": parsed,
+                    }
         raise RuntimeError(f"MailerSend HTTP {exc.code}: {payload}") from exc
     except URLError as exc:
         raise RuntimeError(f"MailerSend URL error: {exc}") from exc

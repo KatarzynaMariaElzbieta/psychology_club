@@ -233,6 +233,13 @@ def mark_bulk_processed(batch_id: int, bulk_email_id: str) -> bool:
         redis_client = _get_redis_client()
     except Exception:
         return False
+    key = get_bulk_done_cache_key(batch_id)
+    try:
+        added = redis_client.sadd(key, bulk_email_id)
+        redis_client.expire(key, RECIPIENTS_CACHE_TTL_SECONDS)
+        return bool(added)
+    except Exception:
+        return False
 
 
 def list_bulk_ids_for_batch(batch_id: int) -> list[str]:
@@ -310,13 +317,6 @@ def find_batch_id_for_bulk(bulk_email_id: str) -> int | None:
     except Exception:
         return None
     return None
-    key = get_bulk_done_cache_key(batch_id)
-    try:
-        added = redis_client.sadd(key, bulk_email_id)
-        redis_client.expire(key, RECIPIENTS_CACHE_TTL_SECONDS)
-        return bool(added)
-    except Exception:
-        return False
 
 
 def load_bulk_request(bulk_email_id: str) -> dict | None:
@@ -444,7 +444,6 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
     db.session.commit()
 
     failed_key = get_failed_recipients_cache_key(batch.id)
-    sent_key = get_sent_recipients_cache_key(batch.id)
     use_failed_list = recipient_cache_key == failed_key
     if use_failed_list:
         emails = load_failed_recipients(batch.id)
@@ -793,6 +792,15 @@ def _check_bulk_email_status(
         return
 
     data = status.get("data") if isinstance(status, dict) else {}
+    skipped_status = isinstance(status, dict) and status.get("skipped_status") is True
+    if skipped_status and not emails:
+        if not isinstance(data, dict):
+            data = {}
+            status["data"] = data
+        if bulk.total_recipients is not None:
+            data.setdefault("total_recipients_count", bulk.total_recipients)
+            data.setdefault("suppressed_recipients_count", 0)
+            data.setdefault("validation_errors_count", 0)
     state = None
     if isinstance(data, dict):
         state = data.get("state")
