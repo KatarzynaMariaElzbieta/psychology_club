@@ -14,6 +14,9 @@ def send_bulk_template_emails(
     reply_to: dict | None = None,
 ) -> str | None:
     """Send a bulk template email and return the bulk identifier if available."""
+    subject = (subject or "").strip()
+    if not subject:
+        raise RuntimeError("Brak tematu wiadomości.")
     token = current_app.config.get("MAILERSEND_API_TOKEN", "").strip()
     if not token:
         raise RuntimeError("Brak MAILERSEND_API_TOKEN")
@@ -68,6 +71,8 @@ def get_bulk_email_status(bulk_email_id: str) -> dict:
         headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "psychology-club-mailer/1.0",
         },
         method="GET",
     )

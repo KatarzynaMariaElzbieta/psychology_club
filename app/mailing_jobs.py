@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time as time_module
 import uuid
@@ -12,7 +13,7 @@ from app import create_app
 from app.extensions import db
 from app.mailing_import import parse_recipient_file
 from app.mailing_send import get_bulk_email_status, send_bulk_template_emails
-from app.models import MailingBatch
+from app.models import MailingBatch, MailingBulk
 
 RECIPIENTS_CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
 FAILED_RECIPIENTS_PREFIX = "mailing:failed"
@@ -20,6 +21,8 @@ SENT_RECIPIENTS_PREFIX = "mailing:sent"
 PENDING_BULK_PREFIX = "mailing:bulk:pending"
 BULK_REQUEST_PREFIX = "mailing:bulk"
 DONE_BULK_PREFIX = "mailing:bulk:done"
+
+logger = logging.getLogger(__name__)
 
 
 def _get_redis_client():
@@ -230,6 +233,64 @@ def mark_bulk_processed(batch_id: int, bulk_email_id: str) -> bool:
         redis_client = _get_redis_client()
     except Exception:
         return False
+    key = get_bulk_done_cache_key(batch_id)
+    try:
+        added = redis_client.sadd(key, bulk_email_id)
+        redis_client.expire(key, RECIPIENTS_CACHE_TTL_SECONDS)
+        return bool(added)
+    except Exception:
+        return False
+
+
+def list_bulk_ids_for_batch(batch_id: int) -> list[str]:
+    """Return bulk ids stored in the database for a batch."""
+    bulks = MailingBulk.query.filter_by(batch_id=batch_id).all()
+    return [bulk.bulk_email_id for bulk in bulks if bulk.bulk_email_id]
+
+
+def ensure_bulk_record(batch_id: int, bulk_email_id: str, total_recipients: int | None = None) -> MailingBulk:
+    """Create or update bulk record for a batch."""
+    bulk = MailingBulk.query.filter_by(bulk_email_id=bulk_email_id).first()
+    if bulk:
+        if total_recipients is not None and total_recipients > 0 and bulk.total_recipients == 0:
+            bulk.total_recipients = total_recipients
+        return bulk
+    bulk = MailingBulk(
+        batch_id=batch_id,
+        bulk_email_id=bulk_email_id,
+        status="queued",
+        total_recipients=total_recipients or 0,
+    )
+    db.session.add(bulk)
+    return bulk
+
+
+def refresh_batch_from_db(batch: MailingBatch) -> None:
+    """Update batch counts and status from MailingBulk records."""
+    bulks = (
+        MailingBulk.query.filter_by(batch_id=batch.id)
+        .order_by(MailingBulk.updated_at.desc())
+        .all()
+    )
+    if not bulks:
+        return
+    sent_total = sum(bulk.sent_count or 0 for bulk in bulks)
+    failed_total = sum(bulk.failed_count or 0 for bulk in bulks)
+    any_error = any(bulk.status in {"error", "unknown"} for bulk in bulks)
+    batch.sent_count = sent_total
+    batch.failed_count = failed_total
+    if has_pending_bulk(batch.id):
+        batch.status = "sending"
+    elif any_error:
+        batch.status = "error"
+    elif failed_total:
+        batch.status = "failed" if sent_total == 0 else "partial"
+    else:
+        batch.status = "sent"
+    if any_error:
+        last_error_bulk = next((b for b in bulks if b.last_error), None)
+        if last_error_bulk:
+            batch.last_error = last_error_bulk.last_error
 
 
 def find_batch_id_for_bulk(bulk_email_id: str) -> int | None:
@@ -256,13 +317,6 @@ def find_batch_id_for_bulk(bulk_email_id: str) -> int | None:
     except Exception:
         return None
     return None
-    key = get_bulk_done_cache_key(batch_id)
-    try:
-        added = redis_client.sadd(key, bulk_email_id)
-        redis_client.expire(key, RECIPIENTS_CACHE_TTL_SECONDS)
-        return bool(added)
-    except Exception:
-        return False
 
 
 def load_bulk_request(bulk_email_id: str) -> dict | None:
@@ -390,7 +444,6 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
     db.session.commit()
 
     failed_key = get_failed_recipients_cache_key(batch.id)
-    sent_key = get_sent_recipients_cache_key(batch.id)
     use_failed_list = recipient_cache_key == failed_key
     if use_failed_list:
         emails = load_failed_recipients(batch.id)
@@ -447,16 +500,16 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
     day_start_utc = day_start_local.astimezone(utc_tz).replace(tzinfo=None)
     day_end_utc = day_end_local.astimezone(utc_tz).replace(tzinfo=None)
     daily_limit = int(current_app.config.get("MAILERSEND_DAILY_LIMIT", 100) or 100)
-    already_sent = (
-        db.session.query(func.coalesce(func.sum(MailingBatch.sent_count), 0))
+    planned_total = (
+        db.session.query(func.coalesce(func.sum(MailingBatch.total_recipients), 0))
         .filter(MailingBatch.send_at >= day_start_utc, MailingBatch.send_at <= day_end_utc)
         .scalar()
     )
-    if already_sent + len(emails) > daily_limit:
+    if planned_total + len(emails) > daily_limit:
         batch.status = "failed"
         batch.last_error = (
             f"Limit dzienny {daily_limit} przekroczony "
-            f"(wysłano {already_sent}, planowane {len(emails)})"
+            f"(zaplanowano {planned_total}, dodatkowe {len(emails)})"
         )
         db.session.commit()
         return
@@ -490,6 +543,7 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
                     reply_to=reply_to,
                 )
                 if bulk_email_id:
+                    ensure_bulk_record(batch.id, bulk_email_id, total_recipients=len(chunk))
                     cache_bulk_request(bulk_email_id, batch.id, chunk)
                     add_pending_bulk(batch.id, bulk_email_id)
                     enqueue_bulk_status_check(
@@ -706,6 +760,7 @@ def _check_bulk_email_status(
     if not batch:
         delete_bulk_request(bulk_email_id)
         return
+    bulk = ensure_bulk_record(batch.id, bulk_email_id, total_recipients=len(emails) if emails else None)
 
     max_attempts = int(current_app.config.get("MAILERSEND_BULK_STATUS_MAX_ATTEMPTS", 12) or 12)
     retry_delay = float(current_app.config.get("MAILERSEND_BULK_STATUS_RETRY_DELAY_SECONDS", 15) or 15)
@@ -714,6 +769,10 @@ def _check_bulk_email_status(
         status = get_bulk_email_status(bulk_email_id)
     except Exception as exc:
         attempts += 1
+        bulk.last_error = str(exc)
+        bulk.last_checked_at = datetime.utcnow()
+        bulk.status = "sending" if attempts <= max_attempts else "error"
+        db.session.commit()
         if attempts <= max_attempts:
             cache_bulk_request(bulk_email_id, batch_id, emails, attempts=attempts)
             enqueue_bulk_status_check(
@@ -728,18 +787,44 @@ def _check_bulk_email_status(
         add_failed_recipients(batch.id, emails)
         remove_pending_bulk(batch.id, bulk_email_id)
         delete_bulk_request(bulk_email_id)
-        refresh_batch_counts(batch)
+        refresh_batch_from_db(batch)
         db.session.commit()
         return
 
     data = status.get("data") if isinstance(status, dict) else {}
+    skipped_status = isinstance(status, dict) and status.get("skipped_status") is True
+    if skipped_status and not emails:
+        if not isinstance(data, dict):
+            data = {}
+            status["data"] = data
+        if bulk.total_recipients is not None:
+            data.setdefault("total_recipients_count", bulk.total_recipients)
+            data.setdefault("suppressed_recipients_count", 0)
+            data.setdefault("validation_errors_count", 0)
     state = None
     if isinstance(data, dict):
         state = data.get("state")
     if state is None and isinstance(status, dict):
         state = status.get("state")
 
+    total_count, suppressed_count, validation_count = _extract_status_counts(status)
+    logger.info(
+        "Bulk status: bulk_id=%s batch_id=%s state=%s data_type=%s totals=%s/%s/%s emails_known=%s",
+        bulk_email_id,
+        batch.id,
+        state,
+        type(data).__name__,
+        total_count,
+        suppressed_count,
+        validation_count,
+        bool(emails),
+    )
+
     if state and state not in {"completed", "failed"}:
+        bulk.state = state
+        bulk.status = "sending"
+        bulk.last_checked_at = datetime.utcnow()
+        db.session.commit()
         attempts += 1
         if attempts <= max_attempts:
             cache_bulk_request(bulk_email_id, batch_id, emails, attempts=attempts)
@@ -751,10 +836,24 @@ def _check_bulk_email_status(
                 attempts=attempts,
             )
             return
+        bulk.status = "error"
+        bulk.last_error = (
+            "Nie udało się pobrać końcowego statusu bulk "
+            f"po {max_attempts} próbach (ostatni stan: {state})."
+        )
+        bulk.last_checked_at = datetime.utcnow()
+        batch.last_error = bulk.last_error
+        remove_pending_bulk(batch.id, bulk_email_id)
+        delete_bulk_request(bulk_email_id)
+        refresh_batch_from_db(batch)
+        db.session.commit()
+        return
 
     failed_list: list[str] = []
     sent_list: list[str] = []
     updated_from_counts = False
+    bulk.last_error = None
+    bulk.state = state
     if emails:
         failed = _extract_failed_from_status(emails, status)
         failed_list = [email for email in emails if email in failed]
@@ -765,27 +864,39 @@ def _check_bulk_email_status(
         if sent_list:
             add_sent_recipients(batch.id, sent_list)
             remove_failed_recipients(batch.id, sent_list)
+        bulk.sent_count = len(sent_list)
+        bulk.failed_count = len(failed_list)
     else:
-        total, suppressed, validation = _extract_status_counts(status)
+        total, suppressed, validation = total_count, suppressed_count, validation_count
         if total is not None:
             failed_count = (suppressed or 0) + (validation or 0)
             sent_count = max(total - failed_count, 0)
             if mark_bulk_processed(batch.id, bulk_email_id):
-                batch.sent_count += sent_count
-                batch.failed_count += failed_count
+                bulk.sent_count = sent_count
+                bulk.failed_count = failed_count
                 updated_from_counts = True
+                logger.info(
+                    "Bulk counts applied: bulk_id=%s batch_id=%s sent=%s failed=%s",
+                    bulk_email_id,
+                    batch.id,
+                    sent_count,
+                    failed_count,
+                )
         else:
-            batch.last_error = "Brak danych statusu bulk do zliczenia odbiorców."
+            bulk.status = "unknown"
+            bulk.last_error = "Brak danych statusu bulk do zliczenia odbiorców."
+            batch.last_error = bulk.last_error
 
     remove_pending_bulk(batch.id, bulk_email_id)
     delete_bulk_request(bulk_email_id)
-    if not updated_from_counts:
-        refresh_batch_counts(batch)
-
-    if not has_pending_bulk(batch.id):
-        if batch.failed_count:
-            batch.status = "failed" if batch.sent_count == 0 else "partial"
+    bulk.last_checked_at = datetime.utcnow()
+    if bulk.status not in {"unknown", "error"}:
+        if state == "failed":
+            bulk.status = "failed"
+        elif bulk.failed_count:
+            bulk.status = "partial"
         else:
-            batch.status = "sent"
+            bulk.status = "sent"
+    refresh_batch_from_db(batch)
 
     db.session.commit()

@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from datetime import datetime, time
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_security import SQLAlchemyUserDatastore, hash_password, roles_accepted
 from werkzeug.utils import secure_filename
@@ -23,6 +24,7 @@ from app.mailing_jobs import (
     get_sent_recipients_cache_key,
     load_failed_recipients,
     list_pending_bulk,
+    list_bulk_ids_for_batch,
     has_pending_bulk,
 )
 
@@ -285,10 +287,11 @@ def mailing():
                     flash("Możesz usuwać tylko nieudane wysyłki.", "danger")
             elif batch and request.form.get("action") == "refresh_status":
                 pending_ids = list_pending_bulk(batch.id)
-                if not pending_ids:
-                    flash("Brak oczekujących statusów bulk do odświeżenia.", "warning")
+                bulk_ids = pending_ids or list_bulk_ids_for_batch(batch.id)
+                if not bulk_ids:
+                    flash("Brak zapisanych paczek bulk do odświeżenia.", "warning")
                 else:
-                    for bulk_id in pending_ids:
+                    for bulk_id in bulk_ids:
                         enqueue_bulk_status_check(
                             bulk_id,
                             delay_seconds=0,
@@ -436,7 +439,11 @@ def mailing():
         flash("Wysyłka została zaplanowana.", "success")
         return redirect(url_for("roles.mailing"))
 
-    batches = models.MailingBatch.query.order_by(models.MailingBatch.created_at.desc()).all()
+    batches = (
+        models.MailingBatch.query.options(joinedload(models.MailingBatch.bulks))
+        .order_by(models.MailingBatch.created_at.desc())
+        .all()
+    )
     default_visible = current_app.config.get("MAIL_DEFAULT_SENDER_EMAIL", "")
     default_name = current_app.config.get("MAIL_DEFAULT_SENDER_NAME", "")
     for batch in batches:
