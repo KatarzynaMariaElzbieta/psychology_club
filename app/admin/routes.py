@@ -242,6 +242,113 @@ def downloads():
     return render_template("roles/downloads.html", files=files)
 
 
+@roles_bp.route("/newsletter", methods=["GET", "POST"])
+@roles_accepted("admin")
+def newsletter():
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        name = (request.form.get("name") or "").strip() or None
+        is_active = request.form.get("is_active") == "on"
+
+        if not email:
+            flash("Adres e-mail jest wymagany.", "danger")
+            return redirect(url_for("roles.newsletter"))
+
+        try:
+            validated = validate_email(email, check_deliverability=False)
+            email = validated.email.lower()
+        except EmailNotValidError:
+            flash("Nieprawidłowy adres e-mail.", "danger")
+            return redirect(url_for("roles.newsletter"))
+
+        if models.NewsletterSubscriber.query.filter_by(email=email).first():
+            flash("Ten adres e-mail jest już na liście newslettera.", "warning")
+            return redirect(url_for("roles.newsletter"))
+
+        db.session.add(
+            models.NewsletterSubscriber(
+                email=email,
+                name=name,
+                is_active=is_active,
+            )
+        )
+        db.session.commit()
+        flash("Dodano adres do newslettera.", "success")
+        return redirect(url_for("roles.newsletter"))
+
+    subscribers = (
+        models.NewsletterSubscriber.query.order_by(models.NewsletterSubscriber.created_at.desc()).all()
+    )
+    return render_template("roles/newsletter.html", subscribers=subscribers)
+
+
+@roles_bp.route("/newsletter/<int:subscriber_id>/edit", methods=["GET", "POST"])
+@roles_accepted("admin")
+def edit_newsletter_subscriber(subscriber_id: int):
+    subscriber = models.NewsletterSubscriber.query.get(subscriber_id)
+    if not subscriber:
+        flash("Subskrybent nie istnieje.", "danger")
+        return redirect(url_for("roles.newsletter"))
+
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        name = (request.form.get("name") or "").strip() or None
+        is_active = request.form.get("is_active") == "on"
+
+        if not email:
+            flash("Adres e-mail jest wymagany.", "danger")
+            return redirect(url_for("roles.edit_newsletter_subscriber", subscriber_id=subscriber.id))
+
+        try:
+            validated = validate_email(email, check_deliverability=False)
+            email = validated.email.lower()
+        except EmailNotValidError:
+            flash("Nieprawidłowy adres e-mail.", "danger")
+            return redirect(url_for("roles.edit_newsletter_subscriber", subscriber_id=subscriber.id))
+
+        existing = models.NewsletterSubscriber.query.filter_by(email=email).first()
+        if existing and existing.id != subscriber.id:
+            flash("Ten adres e-mail jest już na liście newslettera.", "warning")
+            return redirect(url_for("roles.edit_newsletter_subscriber", subscriber_id=subscriber.id))
+
+        subscriber.email = email
+        subscriber.name = name
+        subscriber.is_active = is_active
+        db.session.commit()
+        flash("Dane subskrybenta zostały zaktualizowane.", "success")
+        return redirect(url_for("roles.newsletter"))
+
+    return render_template("roles/newsletter_edit.html", subscriber=subscriber)
+
+
+@roles_bp.route("/newsletter/<int:subscriber_id>/toggle", methods=["POST"])
+@roles_accepted("admin")
+def toggle_newsletter_subscriber(subscriber_id: int):
+    subscriber = models.NewsletterSubscriber.query.get(subscriber_id)
+    if not subscriber:
+        flash("Subskrybent nie istnieje.", "danger")
+        return redirect(url_for("roles.newsletter"))
+
+    subscriber.is_active = not subscriber.is_active
+    db.session.commit()
+    flash("Zmieniono status subskrybenta.", "success")
+    return redirect(url_for("roles.newsletter"))
+
+
+@roles_bp.route("/newsletter/<int:subscriber_id>/delete", methods=["POST"])
+@roles_accepted("admin")
+def delete_newsletter_subscriber(subscriber_id: int):
+    subscriber = models.NewsletterSubscriber.query.get(subscriber_id)
+    if not subscriber:
+        flash("Subskrybent nie istnieje.", "danger")
+        return redirect(url_for("roles.newsletter"))
+
+    db.session.delete(subscriber)
+    db.session.commit()
+    flash("Usunięto subskrybenta z newslettera.", "success")
+    return redirect(url_for("roles.newsletter"))
+
+
 @roles_bp.route("/mailing", methods=["GET", "POST"])
 @roles_accepted("admin")
 def mailing():
@@ -331,6 +438,7 @@ def mailing():
                     template_data[key[4:]] = cleaned
         send_at_raw = (request.form.get("send_at") or "").strip()
         auto_delete = request.form.get("auto_delete") == "on"
+        recipient_source = (request.form.get("recipient_source") or "file").strip().lower()
         upload_file = request.files.get("file")
 
         if not template_id:
@@ -341,8 +449,8 @@ def mailing():
             flash("Temat wiadomości jest wymagany.", "danger")
             return redirect(url_for("roles.mailing"))
 
-        if not upload_file or not upload_file.filename:
-            flash("Wybierz plik CSV lub XLSX z adresami e-mail.", "danger")
+        if recipient_source not in {"file", "newsletter"}:
+            flash("Nieprawidłowe źródło odbiorców.", "danger")
             return redirect(url_for("roles.mailing"))
 
         if visible_to_email:
@@ -362,36 +470,55 @@ def mailing():
             flash("Nieprawidłowa data wysyłki.", "danger")
             return redirect(url_for("roles.mailing"))
 
-        original_name = secure_filename(upload_file.filename)
-        if not original_name:
-            flash("Nieprawidłowa nazwa pliku.", "danger")
-            return redirect(url_for("roles.mailing"))
+        emails = []
+        stored_path = None
+        if recipient_source == "newsletter":
+            emails = [
+                row.email
+                for row in models.NewsletterSubscriber.query.filter_by(is_active=True)
+                .order_by(models.NewsletterSubscriber.created_at.desc())
+                .all()
+            ]
+            if not emails:
+                flash("Lista newslettera nie zawiera aktywnych adresów.", "danger")
+                return redirect(url_for("roles.mailing"))
+            original_name = "newsletter (baza)"
+            stored_name = f"newsletter-{uuid.uuid4().hex}.list"
+        else:
+            if not upload_file or not upload_file.filename:
+                flash("Wybierz plik CSV lub XLSX z adresami e-mail.", "danger")
+                return redirect(url_for("roles.mailing"))
 
-        _, ext = os.path.splitext(original_name)
-        ext = ext.lower()
-        if ext not in {".csv", ".xlsx", ".xlsm", ".xltx", ".xltm"}:
-            flash("Obsługiwane są tylko pliki CSV lub XLSX.", "danger")
-            return redirect(url_for("roles.mailing"))
+            original_name = secure_filename(upload_file.filename)
+            if not original_name:
+                flash("Nieprawidłowa nazwa pliku.", "danger")
+                return redirect(url_for("roles.mailing"))
 
-        stored_name = f"{uuid.uuid4().hex}{ext}"
-        upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing")
-        os.makedirs(upload_dir, exist_ok=True)
-        stored_path = os.path.join(upload_dir, stored_name)
-        upload_file.save(stored_path)
+            _, ext = os.path.splitext(original_name)
+            ext = ext.lower()
+            if ext not in {".csv", ".xlsx", ".xlsm", ".xltx", ".xltm"}:
+                flash("Obsługiwane są tylko pliki CSV lub XLSX.", "danger")
+                return redirect(url_for("roles.mailing"))
 
-        try:
-            emails = parse_recipient_file(stored_path)
-        except Exception as exc:
-            if os.path.exists(stored_path):
-                os.remove(stored_path)
-            flash(str(exc), "danger")
-            return redirect(url_for("roles.mailing"))
+            stored_name = f"{uuid.uuid4().hex}{ext}"
+            upload_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing")
+            os.makedirs(upload_dir, exist_ok=True)
+            stored_path = os.path.join(upload_dir, stored_name)
+            upload_file.save(stored_path)
 
-        if not emails:
-            if os.path.exists(stored_path):
-                os.remove(stored_path)
-            flash("Plik nie zawiera poprawnych adresów e-mail.", "danger")
-            return redirect(url_for("roles.mailing"))
+            try:
+                emails = parse_recipient_file(stored_path)
+            except Exception as exc:
+                if os.path.exists(stored_path):
+                    os.remove(stored_path)
+                flash(str(exc), "danger")
+                return redirect(url_for("roles.mailing"))
+
+            if not emails:
+                if os.path.exists(stored_path):
+                    os.remove(stored_path)
+                flash("Plik nie zawiera poprawnych adresów e-mail.", "danger")
+                return redirect(url_for("roles.mailing"))
 
         local_send_at = send_at.replace(tzinfo=utc_tz).astimezone(warsaw_tz)
         day_start_local = datetime.combine(local_send_at.date(), time.min, tzinfo=warsaw_tz)
@@ -406,7 +533,7 @@ def mailing():
             .scalar()
         )
         if scheduled_total + len(emails) > daily_limit:
-            if os.path.exists(stored_path):
+            if stored_path and os.path.exists(stored_path):
                 os.remove(stored_path)
             flash(
                 f"Limit dzienny {daily_limit} został przekroczony (zaplanowano {scheduled_total}).",
@@ -416,6 +543,7 @@ def mailing():
 
         recipient_cache_key = cache_recipients(emails)
         batch = models.MailingBatch(
+            recipient_source=recipient_source,
             template_type_id=template_type.id if template_type else None,
             template_id=template_id,
             template_data=json.dumps(template_data, ensure_ascii=False) if template_data else None,
@@ -434,7 +562,7 @@ def mailing():
         db.session.commit()
 
         enqueue_mailing_batch(batch.id, recipient_cache_key=recipient_cache_key)
-        if os.path.exists(stored_path):
+        if stored_path and os.path.exists(stored_path):
             os.remove(stored_path)
         flash("Wysyłka została zaplanowana.", "success")
         return redirect(url_for("roles.mailing"))

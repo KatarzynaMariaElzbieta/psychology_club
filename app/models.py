@@ -53,6 +53,18 @@ class User(db.Model, UserMixin):
         return f"{self.email}"
 
 
+class NewsletterSubscriber(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    name = db.Column(db.String(120), nullable=True)
+    is_active = db.Column(db.Boolean(), nullable=False, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<NewsletterSubscriber {self.email}>"
+
+
 class Tag(db.Model):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
@@ -111,6 +123,7 @@ class DownloadFile(db.Model):
 
 class MailingBatch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    recipient_source = db.Column(db.String(24), nullable=False, default="file")
     template_type_id = db.Column(db.Integer, db.ForeignKey("mailing_template_type.id"), nullable=True)
     template_id = db.Column(db.String(120), nullable=False)
     template_data = db.Column(db.Text, nullable=True)

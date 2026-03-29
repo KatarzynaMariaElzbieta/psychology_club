@@ -13,7 +13,7 @@ from app import create_app
 from app.extensions import db
 from app.mailing_import import parse_recipient_file
 from app.mailing_send import get_bulk_email_status, send_bulk_template_emails
-from app.models import MailingBatch, MailingBulk
+from app.models import MailingBatch, MailingBulk, NewsletterSubscriber
 
 RECIPIENTS_CACHE_TTL_SECONDS = 60 * 60 * 24 * 7
 FAILED_RECIPIENTS_PREFIX = "mailing:failed"
@@ -452,14 +452,22 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
         if not emails:
             emails = load_cached_recipients(batch.recipient_cache_key)
         if not emails:
-            stored_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing", batch.stored_name)
-            try:
-                emails = parse_recipient_file(stored_path)
-            except Exception as exc:
-                batch.status = "failed"
-                batch.last_error = str(exc)
-                db.session.commit()
-                return
+            if batch.recipient_source == "newsletter":
+                emails = [
+                    row.email
+                    for row in NewsletterSubscriber.query.filter_by(is_active=True)
+                    .order_by(NewsletterSubscriber.created_at.desc())
+                    .all()
+                ]
+            else:
+                stored_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing", batch.stored_name)
+                try:
+                    emails = parse_recipient_file(stored_path)
+                except Exception as exc:
+                    batch.status = "failed"
+                    batch.last_error = str(exc)
+                    db.session.commit()
+                    return
 
     template_data = None
     if batch.template_data:
@@ -592,11 +600,12 @@ def _send_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -
             get_sent_recipients_cache_key(batch.id),
             get_pending_bulk_cache_key(batch.id),
         )
-        try:
-            stored_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing", batch.stored_name)
-            os.remove(stored_path)
-        except OSError:
-            pass
+        if batch.recipient_source != "newsletter":
+            try:
+                stored_path = os.path.join(current_app.config["UPLOAD_FOLDER"], "mailing", batch.stored_name)
+                os.remove(stored_path)
+            except OSError:
+                pass
 
 
 def enqueue_mailing_batch(batch_id: int, recipient_cache_key: str | None = None) -> None:

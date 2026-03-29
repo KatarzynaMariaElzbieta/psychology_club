@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Newsletter – Panel administracyjny{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('roles.static', filename='css/admin.css') }}">
+
+<div class="admin-page">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="admin-flash-list">
+        {% for category, message in messages %}
+          <li class="admin-flash-item">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-header">
+    <h1>Newsletter</h1>
+    <p class="admin-subtitle">Dodawaj, edytuj i wypisuj adresy z listy newslettera.</p>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Dodaj subskrybenta</h2>
+      <a class="admin-link" href="{{ url_for('roles.admin_panel') }}">Wróć do panelu admina</a>
+    </div>
+    <div class="admin-card__body">
+      <form method="POST">
+        <div class="admin-field">
+          <label for="email">Adres e-mail</label>
+          <input id="email" type="text" name="email" required>
+        </div>
+
+        <div class="admin-field">
+          <label for="name">Imię i nazwisko (opcjonalnie)</label>
+          <input id="name" type="text" name="name">
+        </div>
+
+        <div class="admin-field">
+          <label>
+            <input type="checkbox" name="is_active" checked>
+            Aktywny subskrybent
+          </label>
+        </div>
+
+        <div class="admin-actions">
+          <button class="admin-btn" type="submit">Dodaj adres</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>Lista subskrybentów</h2>
+    </div>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Imię</th>
+          <th>Status</th>
+          <th>Dodano</th>
+          <th>Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for subscriber in subscribers %}
+          <tr>
+            <td>{{ subscriber.email }}</td>
+            <td>{{ subscriber.name or "-" }}</td>
+            <td>
+              {% if subscriber.is_active %}
+                <span class="admin-chip">Aktywny</span>
+              {% else %}
+                <span class="admin-chip">Wypisany</span>
+              {% endif %}
+            </td>
+            <td>{{ subscriber.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+              <div class="admin-actions">
+                <a class="admin-link" href="{{ url_for('roles.edit_newsletter_subscriber', subscriber_id=subscriber.id) }}">Edytuj</a>
+                <form method="POST" action="{{ url_for('roles.toggle_newsletter_subscriber', subscriber_id=subscriber.id) }}">
+                  <button type="submit" class="admin-link" style="border:0;background:none;padding:0;cursor:pointer;">
+                    {% if subscriber.is_active %}Wypisz{% else %}Aktywuj{% endif %}
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('roles.delete_newsletter_subscriber', subscriber_id=subscriber.id) }}" onsubmit="return confirm('Usunąć ten adres z newslettera?');">
+                  <button type="submit" class="admin-link" style="border:0;background:none;padding:0;cursor:pointer;">Usuń</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="5" class="admin-muted">Brak zapisanych adresów.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
