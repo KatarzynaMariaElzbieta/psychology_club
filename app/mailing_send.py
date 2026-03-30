@@ -44,7 +44,7 @@ def send_bulk_template_emails(
             builder = builder.reply_to(reply_to["email"], reply_to.get("name"))
         data = dict(template_data or {})
         data["unsubscribe_url"] = build_unsubscribe_url(email, base_url=base_url)
-        builder = builder.personalize_many([{"email": email, "data": data}])
+        builder = builder.personalize(email, **data)
         email_requests.append(builder.subject(subject).template(template_id).build())
 
     if not email_requests:
