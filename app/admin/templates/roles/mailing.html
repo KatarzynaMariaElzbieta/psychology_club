@@ -51,6 +51,14 @@
           <label for="subject">Temat wiadomości</label>
           <input type="text" id="subject" name="subject" required>
         </div>
+        <div class="admin-field">
+          <label for="recipient_source">Źródło odbiorców</label>
+          <select id="recipient_source" name="recipient_source" class="admin-select">
+            <option value="file" selected>Plik CSV/XLSX</option>
+            <option value="newsletter">Newsletter (aktywni)</option>
+          </select>
+          <div class="admin-muted">Wybierz listę z pliku lub aktywne adresy z bazy newslettera.</div>
+        </div>
         {% if selected_fields %}
           <div class="admin-card" style="margin: 1rem 0;">
             <div class="admin-card__head">
@@ -80,9 +88,9 @@
           <input type="datetime-local" id="send_at" name="send_at">
           <div class="admin-muted">Jeśli puste, wysyłka ruszy od razu.</div>
         </div>
-        <div class="admin-field">
+        <div class="admin-field" data-recipient-file>
           <label for="file">Plik CSV/XLSX</label>
-          <input type="file" id="file" name="file" accept=".csv,.xlsx,.xlsm,.xltx,.xltm" required>
+          <input type="file" id="file" name="file" accept=".csv,.xlsx,.xlsm,.xltx,.xltm">
           <div class="admin-muted">Kolumna z e-mailami powinna mieć nagłówek "email" (lub podobny).</div>
         </div>
         <div class="admin-field">
@@ -122,7 +130,7 @@
               <th>Template</th>
               <th>Odbiorcy</th>
               <th>Status</th>
-              <th>Plik</th>
+              <th>Źródło</th>
               <th>Akcje</th>
             </tr>
           </thead>
@@ -134,7 +142,13 @@
                 <td>{{ batch.template_id }}</td>
                 <td>{{ batch.sent_count }}/{{ batch.total_recipients }}</td>
                 <td>{{ batch.status }}</td>
-                <td>{{ batch.original_name }}</td>
+                <td>
+                  {% if batch.recipient_source == 'newsletter' %}
+                    Newsletter (aktywni)
+                  {% else %}
+                    {{ batch.original_name }}
+                  {% endif %}
+                </td>
                 <td>
                   {% if batch.status in ['queued', 'failed', 'partial', 'scheduled'] %}
                     <form method="post" style="display: inline-block; margin-right: 0.5rem;">
@@ -221,4 +235,23 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    var sourceSelect = document.getElementById('recipient_source');
+    var fileField = document.querySelector('[data-recipient-file]');
+    var fileInput = document.getElementById('file');
+    if (!sourceSelect || !fileField || !fileInput) return;
+
+    function updateRecipientSource() {
+      var isFile = sourceSelect.value === 'file';
+      fileField.style.display = isFile ? 'block' : 'none';
+      fileInput.required = isFile;
+      if (!isFile) fileInput.value = '';
+    }
+
+    sourceSelect.addEventListener('change', updateRecipientSource);
+    updateRecipientSource();
+  })();
+</script>
 {% endblock %}

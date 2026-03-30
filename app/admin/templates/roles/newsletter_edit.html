@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Edytuj subskrybenta – Panel administracyjny{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('roles.static', filename='css/admin.css') }}">
+
+<div class="admin-page">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul class="admin-flash-list">
+        {% for category, message in messages %}
+          <li class="admin-flash-item">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-header">
+    <h1>Edytuj subskrybenta</h1>
+    <p class="admin-subtitle">Zaktualizuj dane i status zapisu do newslettera.</p>
+  </div>
+
+  <div class="admin-card">
+    <div class="admin-card__head">
+      <h2>{{ subscriber.email }}</h2>
+      <a class="admin-link" href="{{ url_for('roles.newsletter') }}">Wróć do listy</a>
+    </div>
+    <div class="admin-card__body">
+      <form method="POST">
+        <div class="admin-field">
+          <label for="email">Adres e-mail</label>
+          <input id="email" type="text" name="email" value="{{ subscriber.email }}" required>
+        </div>
+
+        <div class="admin-field">
+          <label for="name">Imię i nazwisko (opcjonalnie)</label>
+          <input id="name" type="text" name="name" value="{{ subscriber.name or '' }}">
+        </div>
+
+        <div class="admin-field">
+          <label>
+            <input type="checkbox" name="is_active" {% if subscriber.is_active %}checked{% endif %}>
+            Aktywny subskrybent
+          </label>
+        </div>
+
+        <div class="admin-actions">
+          <button class="admin-btn" type="submit">Zapisz zmiany</button>
+          <a class="admin-link" href="{{ url_for('roles.newsletter') }}">Anuluj</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
