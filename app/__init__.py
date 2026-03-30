@@ -125,8 +125,10 @@ def create_app():
     init_dash(app)
 
     from app.admin.routes import roles_bp
+    from app.newsletter_routes import newsletter_bp
 
     app.register_blueprint(roles_bp)
+    app.register_blueprint(newsletter_bp)
 
     @app.route("/")
     def index():

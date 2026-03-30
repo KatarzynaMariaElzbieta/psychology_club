@@ -5,6 +5,8 @@ from urllib.error import HTTPError, URLError
 from flask import current_app
 from mailersend import EmailBuilder, MailerSendClient
 
+from app.newsletter import build_unsubscribe_url
+
 
 def send_bulk_template_emails(
     template_id: str,
@@ -26,6 +28,7 @@ def send_bulk_template_emails(
         raise RuntimeError("Brak MAIL_DEFAULT_SENDER_EMAIL")
 
     sender_name = (current_app.config.get("MAIL_DEFAULT_SENDER_NAME") or "").strip()
+    base_url = (current_app.config.get("NEWSLETTER_PUBLIC_BASE_URL") or "").strip() or None
 
     ms = MailerSendClient(api_key=token)
     email_requests = []
@@ -39,8 +42,9 @@ def send_bulk_template_emails(
         builder = builder.to(email, name)
         if reply_to and reply_to.get("email"):
             builder = builder.reply_to(reply_to["email"], reply_to.get("name"))
-        if template_data:
-            builder = builder.personalize(email, **template_data)
+        data = dict(template_data or {})
+        data["unsubscribe_url"] = build_unsubscribe_url(email, base_url=base_url)
+        builder = builder.personalize_many([{"email": email, "data": data}])
         email_requests.append(builder.subject(subject).template(template_id).build())
 
     if not email_requests:
