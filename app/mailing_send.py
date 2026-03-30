@@ -3,6 +3,8 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 from flask import current_app
+from urllib.parse import urlparse
+
 from mailersend import EmailBuilder, MailerSendClient
 
 from app.newsletter import build_unsubscribe_url
@@ -33,22 +35,41 @@ def send_bulk_template_emails(
     ms = MailerSendClient(api_key=token)
     email_requests = []
 
+    total_recipients = 0
     for recipient in recipients:
         email = recipient.get("email")
         name = recipient.get("name")
         if not email:
             continue
+        total_recipients += 1
         builder = EmailBuilder().from_email(sender_email, sender_name or None)
         builder = builder.to(email, name)
         if reply_to and reply_to.get("email"):
             builder = builder.reply_to(reply_to["email"], reply_to.get("name"))
         data = dict(template_data or {})
-        data["unsubscribe_url"] = build_unsubscribe_url(email, base_url=base_url)
+        unsubscribe_url = build_unsubscribe_url(email, base_url=base_url)
+        data["unsubscribe_url"] = unsubscribe_url
+        if current_app.config.get("NEWSLETTER_LOG_UNSUBSCRIBE_URLS", False):
+            current_app.logger.info(
+                "Newsletter unsubscribe_url for %s: %s",
+                email,
+                unsubscribe_url,
+            )
+        else:
+            parsed = urlparse(unsubscribe_url)
+            token_suffix = parsed.path.rsplit("/", 1)[-1][-8:]
+            current_app.logger.info(
+                "Newsletter unsubscribe_url built for %s (host=%s, token_suffix=%s)",
+                email,
+                parsed.netloc,
+                token_suffix,
+            )
         builder = builder.personalize(email, **data)
         email_requests.append(builder.subject(subject).template(template_id).build())
 
     if not email_requests:
         return None
+    current_app.logger.info("MailerSend bulk template: prepared %s recipients", total_recipients)
 
     response = ms.emails.send_bulk(email_requests)
 
