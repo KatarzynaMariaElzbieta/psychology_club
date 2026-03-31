@@ -52,6 +52,9 @@ def send_bulk_template_emails(
         data = dict(template_data or {})
         unsubscribe_url = build_unsubscribe_url(email, base_url=base_url)
         data["unsubscribe_url"] = unsubscribe_url
+        print(f"{data=}")
+        for k, i in data.items():
+            print(f"{k=}: {i=}")
         if current_app.config.get("NEWSLETTER_LOG_UNSUBSCRIBE_URLS", False):
             current_app.logger.info(
                 "Newsletter unsubscribe_url for %s: %s",
@@ -67,8 +70,9 @@ def send_bulk_template_emails(
                 parsed.netloc,
                 token_suffix,
             )
-        builder = builder.personalize_many([{"email": email, "data": data}])
-        payload = builder.subject(subject).template(template_id).build()
+        builder = builder.template(template_id).personalize_many([{"email": email, "data": data}])
+        payload = builder.subject(subject).build()
+        payload["personalization"] = [{"email": email, "data": data}]
         if current_app.config.get("NEWSLETTER_LOG_EMAIL_PAYLOADS", False):
             personalization = payload.get("personalization") or payload.get("personalisation")
             keys = None
