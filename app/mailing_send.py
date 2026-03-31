@@ -31,6 +31,12 @@ def send_bulk_template_emails(
 
     sender_name = (current_app.config.get("MAIL_DEFAULT_SENDER_NAME") or "").strip()
     base_url = (current_app.config.get("NEWSLETTER_PUBLIC_BASE_URL") or "").strip() or None
+    current_app.logger.warning(
+        "Newsletter config in worker: base_url=%s server_name=%s preferred_scheme=%s",
+        base_url or "missing",
+        current_app.config.get("SERVER_NAME") or "missing",
+        current_app.config.get("PREFERRED_URL_SCHEME") or "missing",
+    )
 
     ms = MailerSendClient(api_key=token)
     email_requests = []

@@ -111,7 +111,7 @@ def create_app():
     migrate.init_app(app, db)
     mail.init_app(app)
 
-    app.logger.info(
+    app.logger.warning(
         "Config: SECRET_KEY=%s USE_SERVER_NAME=%s SERVER_NAME=%s PREFERRED_URL_SCHEME=%s "
         "APPLICATION_ROOT=%s NEWSLETTER_PUBLIC_BASE_URL=%s",
         "set" if app.config.get("SECRET_KEY") else "missing",
