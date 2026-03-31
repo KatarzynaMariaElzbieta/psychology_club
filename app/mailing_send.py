@@ -78,16 +78,15 @@ def send_bulk_template_emails(
             )
         builder = builder.template(template_id).personalize_many([{"email": email, "data": data}])
         payload = builder.subject(subject).build()
-        payload["personalization"] = [{"email": email, "data": data}]
         if current_app.config.get("NEWSLETTER_LOG_EMAIL_PAYLOADS", False):
-            personalization = payload.get("personalization") or payload.get("personalisation")
+            personalization = getattr(payload, "personalization", None)
             keys = None
             if personalization and personalization[0].get("data"):
                 keys = list(personalization[0]["data"].keys())
             current_app.logger.info(
                 "MailerSend payload: template_id=%s to=%s personalization_keys=%s",
-                payload.get("template_id"),
-                payload.get("to"),
+                getattr(payload, "template_id", None),
+                getattr(payload, "to", None),
                 keys,
             )
         email_requests.append(payload)
