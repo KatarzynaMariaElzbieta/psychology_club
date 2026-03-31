@@ -43,7 +43,10 @@ def send_bulk_template_emails(
             continue
         total_recipients += 1
         builder = EmailBuilder().from_email(sender_email, sender_name or None)
-        builder = builder.to(email, name)
+        to_entry = {"email": email}
+        if name:
+            to_entry["name"] = name
+        builder = builder.to_many([to_entry])
         if reply_to and reply_to.get("email"):
             builder = builder.reply_to(reply_to["email"], reply_to.get("name"))
         data = dict(template_data or {})
@@ -64,8 +67,20 @@ def send_bulk_template_emails(
                 parsed.netloc,
                 token_suffix,
             )
-        builder = builder.personalize(email, **data)
-        email_requests.append(builder.subject(subject).template(template_id).build())
+        builder = builder.personalize_many([{"email": email, "data": data}])
+        payload = builder.subject(subject).template(template_id).build()
+        if current_app.config.get("NEWSLETTER_LOG_EMAIL_PAYLOADS", False):
+            personalization = payload.get("personalization") or payload.get("personalisation")
+            keys = None
+            if personalization and personalization[0].get("data"):
+                keys = list(personalization[0]["data"].keys())
+            current_app.logger.info(
+                "MailerSend payload: template_id=%s to=%s personalization_keys=%s",
+                payload.get("template_id"),
+                payload.get("to"),
+                keys,
+            )
+        email_requests.append(payload)
 
     if not email_requests:
         return None
