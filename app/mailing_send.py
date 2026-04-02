@@ -3,7 +3,11 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
 from flask import current_app
+from urllib.parse import urlparse
+
 from mailersend import EmailBuilder, MailerSendClient
+
+from app.newsletter import build_unsubscribe_url
 
 
 def send_bulk_template_emails(
@@ -26,25 +30,70 @@ def send_bulk_template_emails(
         raise RuntimeError("Brak MAIL_DEFAULT_SENDER_EMAIL")
 
     sender_name = (current_app.config.get("MAIL_DEFAULT_SENDER_NAME") or "").strip()
+    base_url = (current_app.config.get("NEWSLETTER_PUBLIC_BASE_URL") or "").strip() or None
+    current_app.logger.warning(
+        "Newsletter config in worker: base_url=%s server_name=%s preferred_scheme=%s",
+        base_url or "missing",
+        current_app.config.get("SERVER_NAME") or "missing",
+        current_app.config.get("PREFERRED_URL_SCHEME") or "missing",
+    )
 
     ms = MailerSendClient(api_key=token)
     email_requests = []
 
+    total_recipients = 0
     for recipient in recipients:
         email = recipient.get("email")
         name = recipient.get("name")
         if not email:
             continue
+        total_recipients += 1
         builder = EmailBuilder().from_email(sender_email, sender_name or None)
-        builder = builder.to(email, name)
+        to_entry = {"email": email}
+        if name:
+            to_entry["name"] = name
+        builder = builder.to_many([to_entry])
         if reply_to and reply_to.get("email"):
             builder = builder.reply_to(reply_to["email"], reply_to.get("name"))
-        if template_data:
-            builder = builder.personalize(email, **template_data)
-        email_requests.append(builder.subject(subject).template(template_id).build())
+        data = dict(template_data or {})
+        unsubscribe_url = build_unsubscribe_url(email, base_url=base_url)
+        data["unsubscribe_url"] = unsubscribe_url
+        print(f"{data=}")
+        for k, i in data.items():
+            print(f"{k=}: {i=}")
+        if current_app.config.get("NEWSLETTER_LOG_UNSUBSCRIBE_URLS", False):
+            current_app.logger.info(
+                "Newsletter unsubscribe_url for %s: %s",
+                email,
+                unsubscribe_url,
+            )
+        else:
+            parsed = urlparse(unsubscribe_url)
+            token_suffix = parsed.path.rsplit("/", 1)[-1][-8:]
+            current_app.logger.info(
+                "Newsletter unsubscribe_url built for %s (host=%s, token_suffix=%s)",
+                email,
+                parsed.netloc,
+                token_suffix,
+            )
+        builder = builder.template(template_id).personalize_many([{"email": email, "data": data}])
+        payload = builder.subject(subject).build()
+        if current_app.config.get("NEWSLETTER_LOG_EMAIL_PAYLOADS", False):
+            personalization = getattr(payload, "personalization", None)
+            keys = None
+            if personalization and personalization[0].get("data"):
+                keys = list(personalization[0]["data"].keys())
+            current_app.logger.info(
+                "MailerSend payload: template_id=%s to=%s personalization_keys=%s",
+                getattr(payload, "template_id", None),
+                getattr(payload, "to", None),
+                keys,
+            )
+        email_requests.append(payload)
 
     if not email_requests:
         return None
+    current_app.logger.info("MailerSend bulk template: prepared %s recipients", total_recipients)
 
     response = ms.emails.send_bulk(email_requests)
 

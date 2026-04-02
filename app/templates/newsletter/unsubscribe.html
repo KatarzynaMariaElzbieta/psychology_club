@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Wypisanie z newslettera{% endblock %}
+
+{% block content %}
+  <style>
+    .unsubscribe-page {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .unsubscribe-card {
+      width: min(560px, 100%);
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      padding: 2rem;
+      text-align: center;
+    }
+    .unsubscribe-card h1 {
+      margin: 0 0 0.75rem;
+      font-size: 1.6rem;
+      color: #0f172a;
+    }
+    .unsubscribe-card p {
+      margin: 0.5rem 0;
+      color: #334155;
+      line-height: 1.6;
+    }
+    .unsubscribe-card .muted {
+      font-size: 0.95rem;
+      color: #64748b;
+    }
+  </style>
+  <div class="unsubscribe-page">
+    <div class="unsubscribe-card">
+      <h1>Wypisanie z newslettera</h1>
+      {% if status == "success" %}
+        <p>Adres e-mail został wypisany z newslettera.</p>
+        {% if email %}
+          <p class="muted">{{ email }}</p>
+        {% endif %}
+      {% elif status == "already" %}
+        <p>Ten adres jest już wypisany z newslettera.</p>
+        {% if email %}
+          <p class="muted">{{ email }}</p>
+        {% endif %}
+      {% elif status == "not_found" %}
+        <p>Nie znaleźliśmy tego adresu na liście newslettera.</p>
+        {% if email %}
+          <p class="muted">{{ email }}</p>
+        {% endif %}
+      {% else %}
+        <p>Link wypisu jest nieprawidłowy lub wygasł.</p>
+        <p class="muted">Jeśli problem się powtarza, skontaktuj się z nami.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

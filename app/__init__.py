@@ -95,17 +95,32 @@ def create_app():
     app.config["MAIL_DEFAULT_SENDER_NAME"] = sender_name.strip()
 
 
-    if _env_bool("USE_SERVER_NAME", False):
+    app.config["USE_SERVER_NAME"] = _env_bool("USE_SERVER_NAME", False)
+    if app.config["USE_SERVER_NAME"]:
         server_name = os.getenv("SERVER_NAME", "").strip()
         if server_name:
             app.config["SERVER_NAME"] = server_name
     app.config["PREFERRED_URL_SCHEME"] = os.getenv("PREFERRED_URL_SCHEME", "https")
 
     app.config["GA4_MEASUREMENT_ID"] = os.getenv("GA4_MEASUREMENT_ID", "").strip()
+    app.config["NEWSLETTER_PUBLIC_BASE_URL"] = os.getenv("NEWSLETTER_PUBLIC_BASE_URL", "").strip()
+    app.config["NEWSLETTER_LOG_UNSUBSCRIBE_URLS"] = _env_bool("NEWSLETTER_LOG_UNSUBSCRIBE_URLS", False)
+    app.config["NEWSLETTER_LOG_EMAIL_PAYLOADS"] = _env_bool("NEWSLETTER_LOG_EMAIL_PAYLOADS", False)
 
     db.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
+
+    app.logger.warning(
+        "Config: SECRET_KEY=%s USE_SERVER_NAME=%s SERVER_NAME=%s PREFERRED_URL_SCHEME=%s "
+        "APPLICATION_ROOT=%s NEWSLETTER_PUBLIC_BASE_URL=%s",
+        "set" if app.config.get("SECRET_KEY") else "missing",
+        app.config.get("USE_SERVER_NAME", False),
+        app.config.get("SERVER_NAME"),
+        app.config.get("PREFERRED_URL_SCHEME"),
+        app.config.get("APPLICATION_ROOT"),
+        app.config.get("NEWSLETTER_PUBLIC_BASE_URL") or "missing",
+    )
 
     # Import modeli
     from app import models  # noqa
@@ -125,8 +140,10 @@ def create_app():
     init_dash(app)
 
     from app.admin.routes import roles_bp
+    from app.newsletter_routes import newsletter_bp
 
     app.register_blueprint(roles_bp)
+    app.register_blueprint(newsletter_bp)
 
     @app.route("/")
     def index():
