@@ -120,11 +120,15 @@ def article_card(article):
                             dmc.Stack(
                                 [
                                     dmc.Title(article["title"], order=4),
-                                    dmc.Text([
-                                        "Autor: ",
-                                        article["author"], " | ",
-                                        datetime.fromisoformat(article["created_at"]).strftime("%d.%m.%Y")
-                                    ], className="author"),
+                                    dmc.Text(
+                                        [
+                                            "Autor: ",
+                                            article["author"],
+                                            " | ",
+                                            datetime.fromisoformat(article["created_at"]).strftime("%d.%m.%Y"),
+                                        ],
+                                        className="author",
+                                    ),
                                 ],
                                 gap="sx",
                             ),

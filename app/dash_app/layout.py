@@ -116,6 +116,8 @@ def login_logout(_):
     if current_user and current_user.is_authenticated:
         if current_user.has_role("autor"):
             current_menu_items["Dodaj artykuł"] = "/nowy_artykul"
+        if current_user.has_role("zarządzanie projektami"):
+            current_menu_items["Dodaj projekt"] = "/nowy_projekt"
         return (
             dmc.Group(
                 [

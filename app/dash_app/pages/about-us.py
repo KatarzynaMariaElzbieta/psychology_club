@@ -20,12 +20,10 @@ def create_layout():
         dmc.Paper(
             [
                 dmc.Text(
-                    dmc.Title("O nas", order=1, style={"marginBottom": "1rem", "padding-top": "1rem"})
-                    , ta="center"),
+                    dmc.Title("O nas", order=1, style={"marginBottom": "1rem", "padding-top": "1rem"}), ta="center"
+                ),
                 html.Hr(),
-                html.Div([
-                    Purify(html=get_about_us())
-                ])
+                html.Div([Purify(html=get_about_us())]),
             ],
             radius="lg",
             p="lg",
@@ -33,7 +31,7 @@ def create_layout():
             withBorder=True,
         ),
         size="md",
-        mt=20
+        mt=20,
     )
 
 

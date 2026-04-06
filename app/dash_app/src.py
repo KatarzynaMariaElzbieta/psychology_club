@@ -1,14 +1,14 @@
-import bleach
-from bleach.css_sanitizer import CSSSanitizer
-import dash_mantine_components as dmc
 import re
+from functools import wraps
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
-from flask import has_request_context
-from flask_security import current_user
+import bleach
+import dash_mantine_components as dmc
+from bleach.css_sanitizer import CSSSanitizer
 from dash import dcc
 from dash.exceptions import PreventUpdate
-from functools import wraps
+from flask import has_request_context
+from flask_security import current_user
 
 from app.models import Article
 
@@ -103,26 +103,67 @@ def require_admin_or_author(article_id_getter=None, redirect_to=None, raise_on_f
 
 def prepare_html(content):
     allowed_tags = [
-        "p", "br", "img", "h1", "h2", "h3", "h4", "b", "i", "strong", "em",
-        "ul", "ol", "li", "a", "blockquote", "figure", "figcaption"
+        "p",
+        "br",
+        "img",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "b",
+        "i",
+        "strong",
+        "em",
+        "ul",
+        "ol",
+        "li",
+        "a",
+        "blockquote",
+        "figure",
+        "figcaption",
+        "hr",
+        "table",
+        "thead",
+        "tbody",
+        "tr",
+        "td",
+        "th",
+        "colgroup",
+        "col",
+        "span",
     ]
     allowed_attrs = {
         "img": ["src", "alt", "style"],
         "a": ["href", "title", "target", "rel"],
         "p": ["style"],
+        "table": ["style"],
+        "thead": ["style"],
+        "tbody": ["style"],
+        "tr": ["style"],
+        "td": ["style", "colspan", "rowspan", "colwidth"],
+        "th": ["style", "colspan", "rowspan", "colwidth"],
+        "colgroup": ["style"],
+        "col": ["style", "width"],
+        "span": ["style"],
     }
     allowed_styles = [
-        "color", "font-weight", "font-style", "text-decoration",
-        "text-align", "background-color", "margin", "padding",
+        "color",
+        "font-weight",
+        "font-style",
+        "text-decoration",
+        "text-align",
+        "background-color",
+        "margin",
+        "padding",
+        "min-width",
+        "width",
+        "font-family",
+        "font-size",
+        "border",
+        "border-collapse",
     ]
     css_sanitizer = CSSSanitizer(allowed_css_properties=allowed_styles)
-    return bleach.clean(
-        content,
-        tags=allowed_tags,
-        attributes=allowed_attrs,
-        css_sanitizer=css_sanitizer,
-        strip=True
-    )
+    return bleach.clean(content, tags=allowed_tags, attributes=allowed_attrs, css_sanitizer=css_sanitizer, strip=True)
 
 
 def url_for_uploads(filename):

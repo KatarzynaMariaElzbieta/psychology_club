@@ -40,10 +40,6 @@
     height: 27rem;
 }
 
-#_pages_content {
-min-height: calc(100vh - 130px);
-}
-
 .card_title {
     margin-bottom: 0.5rem;
 }

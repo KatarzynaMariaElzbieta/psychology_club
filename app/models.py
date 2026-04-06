@@ -97,6 +97,25 @@ class Article(db.Model):
         return f"<Article {self.title}>"
 
 
+class Project(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    project_type = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.String(600), nullable=False)
+    extra_content = db.Column(db.Text, nullable=True)
+    responsible_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    custom_page_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    custom_page_html = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    responsible = db.relationship("User", backref=db.backref("projects", lazy=True))
+
+    def __repr__(self):
+        return f"<Project {self.title}>"
+
+
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     file_path = db.Column(db.String(255), nullable=False)

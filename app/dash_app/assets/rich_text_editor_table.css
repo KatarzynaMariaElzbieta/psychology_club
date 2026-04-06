@@ -1,0 +1,9 @@
+.ProseMirror table {
+  min-width: 200px !important;
+}
+
+.ProseMirror colgroup,
+.ProseMirror col {
+  min-width: 0 !important;
+  width: auto !important;
+}

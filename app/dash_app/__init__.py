@@ -10,6 +10,7 @@ from app.cookie_texts import (
     PRIVACY_POLICY_LABEL,
     PRIVACY_POLICY_TITLE,
 )
+
 from .layout import layout
 
 
@@ -290,7 +291,7 @@ def init_dash(flask_app):
     dash_app = DashProxy(
         __name__,
         server=flask_app,
-        url_base_pathname='/',
+        url_base_pathname="/",
         suppress_callback_exceptions=True,
         use_pages=True,
     )
