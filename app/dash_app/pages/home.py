@@ -11,7 +11,7 @@ dash.register_page(
     path="/",
     name="Strona główna",
     title="Studenckie Koło Psychologii WAM",
-    description="Aktualności, artykuły, projekty, wydarzenia i kontakt Koła Psychologii WAM.",
+    description="Strona Studenckiego Koła Psychologii Ogólnej WAM zawierająca: aktualności, artykuły, projekty, wydarzenia.",
 )
 
 
