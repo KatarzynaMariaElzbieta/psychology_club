@@ -4,7 +4,13 @@ from dash import Input, Output, callback, html
 
 from app.models import Project
 
-dash.register_page(__name__, path="/projekty")  # rejestracja strony
+dash.register_page(
+    __name__,
+    path="/projekty",
+    name="Projekty",
+    title="Projekty | Psychowam",
+    description="Projekty i inicjatywy realizowane przez Koło Psychologii WAM.",
+)  # rejestracja strony
 layout = dmc.Stack(
     [
         dmc.Container(

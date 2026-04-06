@@ -6,7 +6,13 @@ from ... import db
 from ...models import Article
 from ..src import url_for_uploads
 
-dash.register_page(__name__, path="/", name="Psychologii WAM")
+dash.register_page(
+    __name__,
+    path="/",
+    name="Strona główna",
+    title="Studenckie Koło Psychologii WAM",
+    description="Aktualności, artykuły, projekty, wydarzenia i kontakt Koła Psychologii WAM.",
+)
 
 
 def get_last_articles():

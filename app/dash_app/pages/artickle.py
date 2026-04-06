@@ -13,7 +13,13 @@ from ... import db
 from ...models import Article
 from ..src import prepare_html
 
-dash.register_page(__name__, path_template="/artykul/<id>")  # rejestracja strony
+dash.register_page(
+    __name__,
+    path_template="/artykul/<id>",
+    name="Artykuł",
+    title="Artykuł | Psychowam",
+    description="Szczegóły artykułu Koła Psychologii WAM.",
+)  # rejestracja strony
 
 layout = html.Div(id="article-content")
 

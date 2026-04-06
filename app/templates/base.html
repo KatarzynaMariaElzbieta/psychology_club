@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>{% block title %}Koło Psychologii WAM{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Studenckie Koło Psychologii Ogólnej WAM – aktualności, artykuły, projekty, wydarzenia i kontakt.{% endblock %}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
     .cookie-banner {
@@ -269,13 +270,13 @@
     <button type="button" class="cookie-settings-btn" onclick="openCookieSettings()" aria-label="{{ cookie_settings_label }}" title="{{ cookie_settings_label }}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#127850;</span></button>
     <button type="button" class="cookie-settings-btn" onclick="openPrivacyPolicyModal()" aria-label="{{ privacy_policy_label }}" title="{{ privacy_policy_label }}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#128274;</span></button>
   </div>
-  <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()" style="display:none;">
-    <div class="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
+  <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()" style="display:none;" data-nosnippet>
+    <div class="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title" data-nosnippet>
       <div class="privacy-modal__header">
         <h3 id="privacy-modal-title" class="privacy-modal__title">{{ privacy_policy_title }}</h3>
         <button type="button" class="privacy-modal__close" onclick="closePrivacyPolicyModal()">Zamknij</button>
       </div>
-      <p class="privacy-modal__content">{{ privacy_policy_content }}</p>
+      <p class="privacy-modal__content" data-nosnippet>{{ privacy_policy_content }}</p>
     </div>
   </div>
 </body>

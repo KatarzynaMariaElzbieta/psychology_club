@@ -7,7 +7,13 @@ from dash_extensions import Purify
 from app import db
 from app.models import Article
 
-dash.register_page(__name__, path="/o-nas/")
+dash.register_page(
+    __name__,
+    path="/o-nas/",
+    name="O nas",
+    title="O nas | Psychowam",
+    description="Informacje o Kole Psychologii WAM, zespole i misji.",
+)
 
 
 def get_about_us():

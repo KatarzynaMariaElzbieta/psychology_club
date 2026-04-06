@@ -2,7 +2,13 @@ import dash
 import dash_mantine_components as dmc
 from dash import html
 
-dash.register_page(__name__, path="/kalendarium")  # rejestracja strony
+dash.register_page(
+    __name__,
+    path="/kalendarium",
+    name="Kalendarium",
+    title="Kalendarium | Psychowam",
+    description="Terminy wydarzeń, spotkań i aktywności Koła Psychologii WAM.",
+)  # rejestracja strony
 
 
 def site_in_build():

@@ -8,7 +8,13 @@ from app import db
 from app.dash_app.src import prepare_html
 from app.models import Project
 
-dash.register_page(__name__, path="/projekty/1", name="Gdzie po pomoc?")  # rejestracja strony
+dash.register_page(
+    __name__,
+    path="/projekty/1",
+    name="Gdzie po pomoc?",
+    title="Gdzie po pomoc? | Psychowam",
+    description="Informacje o projekcie 'Gdzie po pomoc?' Koła Psychologii WAM.",
+)
 
 DEFAULT_TABLE_HTML = ""
 

@@ -8,7 +8,13 @@ from app import db
 from app.dash_app.src import prepare_html
 from app.models import Project
 
-dash.register_page(__name__, path_template="/projekty/<id>")
+dash.register_page(
+    __name__,
+    path_template="/projekty/<id>",
+    name="Projekt",
+    title="Projekt | Psychowam",
+    description="Szczegóły projektu Koła Psychologii WAM.",
+)
 _CURRENT_MODULE = __name__
 
 
