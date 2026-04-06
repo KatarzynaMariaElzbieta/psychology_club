@@ -53,3 +53,127 @@
     font-style: italic;
     font-size: 12px
 }
+
+.logo-runner {
+    --runner-gap: 10px;
+    --runner-size: 28px;
+    --dog-cycle: 2.6s;
+    --dog-src: url("/static/local/dogs/dog-1.svg");
+    position: relative;
+    display: inline-block;
+}
+
+.logo-runner--lg {
+    --runner-gap: 12px;
+    --runner-size: 32px;
+}
+
+.logo-runner--sm {
+    --runner-gap: 10px;
+    --runner-size: 28px;
+}
+
+.logo-runner img {
+    position: relative;
+    z-index: 1;
+    display: block;
+}
+
+.logo-runner::before,
+.logo-runner::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    font-size: var(--runner-size);
+    width: var(--runner-size);
+    height: var(--runner-size);
+    background-image: var(--dog-src);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(calc(-1 * (var(--runner-size) + var(--runner-gap))), -50%);
+}
+
+.logo-runner::before {
+    z-index: 0;
+}
+
+.logo-runner::after {
+    z-index: 2;
+}
+
+.logo-runner:hover::before {
+    animation: dog-behind var(--dog-cycle) linear infinite;
+}
+
+.logo-runner:hover::after {
+    animation: dog-front var(--dog-cycle) linear infinite;
+}
+
+
+@keyframes dog-behind {
+    0% {
+        opacity: 1;
+        transform: translate(50%, -50%) scaleX(1);
+    }
+    12% {
+        opacity: 1;
+        transform: translate(50%, -50%) scaleX(1);
+    }
+    30% {
+        opacity: 1;
+        transform: translate(calc(-1 * (var(--runner-size) + 50%)), -50%) scaleX(1);
+    }
+    31% {
+        opacity: 0;
+        transform: translate(calc(-1 * (var(--runner-size) + 50%)), -50%) scaleX(1);
+    }
+    68% {
+        opacity: 1;
+        transform: translate(calc(100% + (var(--runner-size) * 2)), -50%) scaleX(1);
+    }
+    92% {
+        opacity: 1;
+        transform: translate(calc(var(--runner-size) + 50%), -50%) scaleX(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(var(--runner-size) + 50%), -50%) scaleX(1);
+    }
+}
+
+@keyframes dog-front {
+    0% {
+        opacity: 0;
+        transform: translate(calc(-1 * (var(--runner-size) + 50%)), -50%) scaleX(-1);
+    }
+    28% {
+        opacity: 0;
+        transform: translate(calc(-1 * (var(--runner-size) + 50%)), -50%) scaleX(-1);
+    }
+    30% {
+        opacity: 1;
+        transform: translate(calc(-1 * (var(--runner-size) + 50%)), -50%) scaleX(-1);
+    }
+    66% {
+        opacity: 1;
+        transform: translate(calc(100% + (var(--runner-size) * 2)), -50%) scaleX(-1);
+    }
+    72% {
+        opacity: 0;
+        transform: translate(calc(100% + (var(--runner-size) * 2)), -50%) scaleX(-1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(100% + (var(--runner-size) * 2)), -50%) scaleX(-1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .logo-runner:hover::after {
+        animation: none;
+    }
+}
