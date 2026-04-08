@@ -70,7 +70,10 @@ layout = dmc.AppShell(
         ),
         dmc.AppShellMain(
             [
-                dmc.Affix(dmc.Image(src=logo2_path, w=150), position={"top": "70", "right": "lg"}),
+                dmc.Affix(
+                    html.Div(dmc.Image(src=logo2_path, w=150), className="logo-runner logo-runner--lg"),
+                    position={"top": "70", "right": "lg"},
+                ),
                 dash.page_container,  # <-- tu ładują się strony
             ],
         ),
@@ -81,8 +84,14 @@ layout = dmc.AppShell(
                     [
                         dmc.Anchor("O nas", href="/o-nas", visibleFrom="md", style={"margin-bottom": "0.5rem"}),
                         dmc.Affix(
-                            dmc.Image(
-                                src=logo_path, w=100, fit="contain", style={"border": "solid", "color": "#1f2e4f"}
+                            html.Div(
+                                dmc.Image(
+                                    src=logo_path,
+                                    w=100,
+                                    fit="contain",
+                                    style={"border": "solid", "color": "#1f2e4f"},
+                                ),
+                                className="logo-runner logo-runner--sm",
                             ),
                             position={"bottom": "-10", "right": "calc(50vw - 50px)"},
                         ),
@@ -116,6 +125,8 @@ def login_logout(_):
     if current_user and current_user.is_authenticated:
         if current_user.has_role("autor"):
             current_menu_items["Dodaj artykuł"] = "/nowy_artykul"
+        if current_user.has_role("zarządzanie projektami"):
+            current_menu_items["Dodaj projekt"] = "/nowy_projekt"
         return (
             dmc.Group(
                 [

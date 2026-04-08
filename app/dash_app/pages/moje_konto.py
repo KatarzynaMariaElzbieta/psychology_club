@@ -1,13 +1,12 @@
 import dash
 import dash_mantine_components as dmc
 from dash import Input, Output, State, callback, dcc, no_update
+from flask_login import current_user
 from flask_security import hash_password
 from flask_security.utils import verify_password
-from flask_login import current_user
 
 from app import db
 from app.models import User
-
 
 dash.register_page(__name__, path="/moje-konto", name="Moje konto")
 

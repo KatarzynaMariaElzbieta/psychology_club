@@ -1,0 +1,36 @@
+.article-content {
+  overflow-x: auto;
+}
+
+.article-content table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 200px !important;
+}
+
+.article-content th,
+.article-content td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+.article-content thead th {
+  text-align: center;
+}
+
+.article-content th,
+.article-content td {
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.article-content colgroup,
+.article-content col,
+.article-content th,
+.article-content td {
+  width: auto !important;
+  min-width: 0 !important;
+}

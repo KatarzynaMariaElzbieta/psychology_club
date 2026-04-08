@@ -3,8 +3,13 @@ import dash_mantine_components as dmc
 from dash import html
 from dash_iconify import DashIconify
 
-
-dash.register_page(__name__, path="/kontakt/", name="Kontakt")  # rejestracja strony
+dash.register_page(
+    __name__,
+    path="/kontakt/",
+    name="Kontakt",
+    title="Kontakt | Psychowam",
+    description="Kontakt i dane Koła Psychologii WAM oraz linki do social media.",
+)  # rejestracja strony
 layout = dmc.Stack(
     [
         dmc.Container(

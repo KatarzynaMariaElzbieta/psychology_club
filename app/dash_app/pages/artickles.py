@@ -8,7 +8,13 @@ from dash import Input, Output, callback, html
 from app.dash_app.src import url_for_uploads
 from app.models import Article
 
-dash.register_page(__name__, path="/artykuly", name="Artykuły")
+dash.register_page(
+    __name__,
+    path="/artykuly",
+    name="Artykuły",
+    title="Artykuły | Psychowam",
+    description="Artykuły i materiały edukacyjne Koła Psychologii WAM.",
+)
 
 
 def article_to_dict(article: Article) -> dict:
@@ -120,11 +126,15 @@ def article_card(article):
                             dmc.Stack(
                                 [
                                     dmc.Title(article["title"], order=4),
-                                    dmc.Text([
-                                        "Autor: ",
-                                        article["author"], " | ",
-                                        datetime.fromisoformat(article["created_at"]).strftime("%d.%m.%Y")
-                                    ], className="author"),
+                                    dmc.Text(
+                                        [
+                                            "Autor: ",
+                                            article["author"],
+                                            " | ",
+                                            datetime.fromisoformat(article["created_at"]).strftime("%d.%m.%Y"),
+                                        ],
+                                        className="author",
+                                    ),
                                 ],
                                 gap="sx",
                             ),

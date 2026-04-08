@@ -10,6 +10,7 @@ from app.cookie_texts import (
     PRIVACY_POLICY_LABEL,
     PRIVACY_POLICY_TITLE,
 )
+
 from .layout import layout
 
 
@@ -290,7 +291,7 @@ def init_dash(flask_app):
     dash_app = DashProxy(
         __name__,
         server=flask_app,
-        url_base_pathname='/',
+        url_base_pathname="/",
         suppress_callback_exceptions=True,
         use_pages=True,
     )
@@ -300,6 +301,7 @@ def init_dash(flask_app):
   <head>
     {{%metas%}}
     <title>{{%title%}}</title>
+    <meta name="description" content="Studenckie Koło Psychologii WAM – aktualności, artykuły, projekty, wydarzenia i kontakt.">
     {{%favicon%}}
     {{%css%}}
     {_build_ga4_snippet(flask_app.config.get("GA4_MEASUREMENT_ID", ""))}
@@ -317,13 +319,13 @@ def init_dash(flask_app):
       <button type="button" class="cookie-settings-btn" onclick="openCookieSettings()" aria-label="{COOKIE_SETTINGS_LABEL}" title="{COOKIE_SETTINGS_LABEL}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#127850;</span></button>
       <button type="button" class="cookie-settings-btn" onclick="openPrivacyPolicyModal()" aria-label="{PRIVACY_POLICY_LABEL}" title="{PRIVACY_POLICY_LABEL}"><span class="cookie-settings-btn__icon" aria-hidden="true">&#128274;</span></button>
     </div>
-    <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()" style="display:none;">
-      <div class="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title">
+    <div id="privacy-modal-overlay" class="privacy-modal-overlay" onclick="if(event.target===this) closePrivacyPolicyModal()" style="display:none;" data-nosnippet>
+      <div class="privacy-modal" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title" data-nosnippet>
         <div class="privacy-modal__header">
           <h3 id="privacy-modal-title" class="privacy-modal__title">{PRIVACY_POLICY_TITLE}</h3>
           <button type="button" class="privacy-modal__close" onclick="closePrivacyPolicyModal()">Zamknij</button>
         </div>
-        <p class="privacy-modal__content">{PRIVACY_POLICY_CONTENT}</p>
+        <p class="privacy-modal__content" data-nosnippet>{PRIVACY_POLICY_CONTENT}</p>
       </div>
     </div>
     <footer>

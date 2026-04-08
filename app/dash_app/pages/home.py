@@ -6,7 +6,13 @@ from ... import db
 from ...models import Article
 from ..src import url_for_uploads
 
-dash.register_page(__name__, path="/", name="Psychologii WAM")
+dash.register_page(
+    __name__,
+    path="/",
+    name="Strona główna",
+    title="Studenckie Koło Psychologii WAM",
+    description="Strona Studenckiego Koła Psychologii Ogólnej WAM zawierająca: aktualności, artykuły, projekty, wydarzenia.",
+)
 
 
 def get_last_articles():
@@ -22,41 +28,41 @@ def generate_card(number, article):
 
     return dmc.CarouselSlide(
         dmc.Anchor(
-        dmc.Card(
-            [
-                # dmc.CardSection(dmc.Text(number, size="xl", m=20, mb=10, className="card_number")),
-                dmc.CardSection(
-                    dmc.Image(
-                        src=img_src,
-                        fallbackSrc="https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/images/bg-4.png",
-                        h=250,
-                    )
-                ),
-                dmc.CardSection(
-                    [
-                        dmc.Title(article.title, order=4, m=10),
-                        dmc.Text(
-                            [
-                                article.short_content,
-                                dmc.Anchor(
-                                    " Czytaj dalej>",
-                                    href=f"artykul/{article.id}",
-                                    style={"color": "Blue", "align": "right", "font-weight": "normal"},
-                                ),
-                            ],
-                            m=10,
-                        ),
-                    ],
-                    p=10,
-                ),
-            ],
-            withBorder=True,
-            shadow="sm",
-            radius="md",
-            h=600,
-        ),
-    href = f"artykul/{article.id}",
-    )
+            dmc.Card(
+                [
+                    # dmc.CardSection(dmc.Text(number, size="xl", m=20, mb=10, className="card_number")),
+                    dmc.CardSection(
+                        dmc.Image(
+                            src=img_src,
+                            fallbackSrc="https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/images/bg-4.png",
+                            h=250,
+                        )
+                    ),
+                    dmc.CardSection(
+                        [
+                            dmc.Title(article.title, order=4, m=10),
+                            dmc.Text(
+                                [
+                                    article.short_content,
+                                    dmc.Anchor(
+                                        " Czytaj dalej>",
+                                        href=f"artykul/{article.id}",
+                                        style={"color": "Blue", "align": "right", "font-weight": "normal"},
+                                    ),
+                                ],
+                                m=10,
+                            ),
+                        ],
+                        p=10,
+                    ),
+                ],
+                withBorder=True,
+                shadow="sm",
+                radius="md",
+                h=600,
+            ),
+            href=f"artykul/{article.id}",
+        )
     )
 
 
@@ -89,7 +95,7 @@ def main_layout():
                 ],
                 justify="center",
                 align="stretch",
-                style={"min-height": "calc(100vh - 130px)" },
+                style={"min-height": "calc(100vh - 130px)"},
                 gap="xs",
             ),
             m={"base": "5% 0", "md": "0 0"},

@@ -7,6 +7,7 @@ import dash
 import dash_mantine_components as dmc
 from dash import Input, Output, State, callback, dcc, html
 from dash.exceptions import PreventUpdate
+from dash_iconify import DashIconify
 from flask import current_app, url_for
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
@@ -54,6 +55,129 @@ layout = html.Div(
                     toolbar={
                         "sticky": True,
                         "controlsGroups": [
+                            [
+                                {
+                                    "CustomControl": {
+                                        "ariaLabel": "Wstaw tabelę",
+                                        "title": "Wstaw tabelę",
+                                        "children": [
+                                            DashIconify(
+                                                icon="mdi:table-plus",
+                                                width=18,
+                                                height=18,
+                                            )
+                                        ],
+                                        "onClick": {
+                                            "function": "rteInsertTable",
+                                            "options": {
+                                                "table": {
+                                                    "rows": 3,
+                                                    "cols": 3,
+                                                    "withHeaderRow": True,
+                                                }
+                                            },
+                                        },
+                                    }
+                                },
+                                {
+                                    "CustomControl": {
+                                        "ariaLabel": "Dodaj wiersz powyżej",
+                                        "title": "Dodaj wiersz powyżej",
+                                        "children": [
+                                            DashIconify(
+                                                icon="mdi:table-row-plus-before",
+                                                width=18,
+                                                height=18,
+                                            )
+                                        ],
+                                        "onClick": {"function": "rteAddRowBefore"},
+                                    }
+                                },
+                                {
+                                    "CustomControl": {
+                                        "ariaLabel": "Dodaj wiersz poniżej",
+                                        "title": "Dodaj wiersz poniżej",
+                                        "children": [
+                                            DashIconify(
+                                                icon="mdi:table-row-plus-after",
+                                                width=18,
+                                                height=18,
+                                            )
+                                        ],
+                                        "onClick": {"function": "rteAddRowAfter"},
+                                    }
+                                },
+                                {
+                                    "CustomControl": {
+                                        "ariaLabel": "Usuń wiersz",
+                                        "title": "Usuń wiersz",
+                                        "children": [
+                                            DashIconify(
+                                                icon="mdi:table-row-remove",
+                                                width=18,
+                                                height=18,
+                                            )
+                                        ],
+                                        "onClick": {"function": "rteDeleteRow"},
+                                    }
+                                },
+                                {
+                                    "CustomControl": {
+                                        "ariaLabel": "Dodaj kolumnę po lewej",
+                                        "title": "Dodaj kolumnę po lewej",
+                                        "children": [
+                                            DashIconify(
+                                                icon="mdi:table-column-plus-before",
+                                                width=18,
+                                                height=18,
+                                            )
+                                        ],
+                                        "onClick": {"function": "rteAddColumnBefore"},
+                                    }
+                                },
+                                {
+                                    "CustomControl": {
+                                        "ariaLabel": "Dodaj kolumnę po prawej",
+                                        "title": "Dodaj kolumnę po prawej",
+                                        "children": [
+                                            DashIconify(
+                                                icon="mdi:table-column-plus-after",
+                                                width=18,
+                                                height=18,
+                                            )
+                                        ],
+                                        "onClick": {"function": "rteAddColumnAfter"},
+                                    }
+                                },
+                                {
+                                    "CustomControl": {
+                                        "ariaLabel": "Usuń kolumnę",
+                                        "title": "Usuń kolumnę",
+                                        "children": [
+                                            DashIconify(
+                                                icon="mdi:table-column-remove",
+                                                width=18,
+                                                height=18,
+                                            )
+                                        ],
+                                        "onClick": {"function": "rteDeleteColumn"},
+                                    }
+                                },
+                                {
+                                    "CustomControl": {
+                                        "ariaLabel": "Usuń tabelę",
+                                        "title": "Usuń tabelę",
+                                        "children": [
+                                            DashIconify(
+                                                icon="mdi:table-remove",
+                                                width=18,
+                                                height=18,
+                                            )
+                                        ],
+                                        "onClick": {"function": "rteDeleteTable"},
+                                    }
+                                },
+                            ],
                             ["Bold", "Italic", "Underline", "Code"],
                             ["H1", "H2", "H3", "H4", "H5", "H6"],
                             ["Strikethrough", "ClearFormatting", "Blockquote"],
@@ -107,7 +231,7 @@ layout = html.Div(
         )
     ],
     id="edit-article-content",
-    style={"display": "none"}
+    style={"display": "none"},
 )
 
 
@@ -174,7 +298,7 @@ def serve_edit_layout(article_id):
         previews,
         article.id,
         main_image,
-        {"display": "block"}
+        {"display": "block"},
     )
 
 
@@ -238,7 +362,19 @@ def load_article_for_edit(pathname):
     article_id_getter=lambda n_clicks, authors, title, short_content, content, google_form_raw, form_close_date_raw, tags, main_image, previews, article_id: article_id,
     raise_on_fail=True,
 )
-def save_article_edit(n_clicks, authors, title, short_content, content, google_form_raw, form_close_date_raw, tags, main_image, previews, article_id):
+def save_article_edit(
+    n_clicks,
+    authors,
+    title,
+    short_content,
+    content,
+    google_form_raw,
+    form_close_date_raw,
+    tags,
+    main_image,
+    previews,
+    article_id,
+):
     if not title or not content:
         return "⚠️ Uzupełnij wszystkie pola!"
     if not authors:

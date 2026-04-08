@@ -3,7 +3,13 @@ import dash_mantine_components as dmc
 
 from app.models import DownloadFile
 
-dash.register_page(__name__, path="/do-pobrania", name="Do pobrania")
+dash.register_page(
+    __name__,
+    path="/do-pobrania",
+    name="Do pobrania",
+    title="Do pobrania | Psychowam",
+    description="Materiały i pliki do pobrania Koła Psychologii WAM.",
+)
 
 
 def serve_layout():
